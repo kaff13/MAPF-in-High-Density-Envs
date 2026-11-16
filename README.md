@@ -76,6 +76,10 @@ python run_env4.py
 ```
 
 
+## Benchmark
+
+See the [MAPF-HD benchmark guide](BENCHMARK.md) for comparing solvers on the six-map suite.
+
 ## Citation
 If this code is useful for your work, please cite our paper:
 
