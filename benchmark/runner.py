@@ -3,18 +3,20 @@
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass, replace
 from hashlib import sha256
+import gzip
 from importlib import import_module
 from inspect import getsourcefile
 from multiprocessing import get_context
 from pathlib import Path
 from time import perf_counter
 import os
+import json
 import random
 import subprocess
 import sys
 import traceback
 
-from .maps import IDENTIFIER, Instance
+from .maps import IDENTIFIER, Instance, point
 from .validation import check_trace
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -51,6 +53,7 @@ class Attempt:
     makespan: int | None = None
     detail: str = ""
     source_sha256: str | None = None
+    plan_path: str | None = None
 
 
 def extract_baseline(destination: Path):
@@ -111,13 +114,34 @@ def materialize_trace(frames):
     return [materialize_frame(frame) for frame in sequence]
 
 
-def worker(connection, solver, instance, baseline_root, log_path):
+def save_plan(path, instance, solver, check, frames):
+    if path is None or frames is None or check.status == "invalid":
+        return None
+    path.parent.mkdir(parents=True, exist_ok=True)
+    serialized_frames = [[point(cell) for cell in frame] for frame in frames]
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    try:
+        with gzip.open(temporary, "wt", encoding="utf-8") as stream:
+            json.dump({
+                "instance_id": instance.id, "solver": solver.name,
+                "status": check.status, "makespan": check.makespan,
+                "detail": check.detail, "frames": serialized_frames,
+            }, stream, separators=(",", ":"))
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return str(path)
+
+
+def worker(connection, solver, instance, baseline_root, log_path, plan_path=None, source_root=None):
     os.environ.setdefault("MPLBACKEND", "Agg")
     with connection, log_path.open("w", encoding="utf-8", buffering=256 * 1024) as stream:
         with redirect_stdout(stream), redirect_stderr(stream):
             started = None
             elapsed = None
             try:
+                if source_root is not None:
+                    sys.path.insert(0, str(source_root))
                 solve = load_solver(solver, baseline_root)
                 fingerprint = fingerprint_source(solve) if solver.entrypoint is not None else None
                 random.seed(instance.seed)
@@ -128,8 +152,9 @@ def worker(connection, solver, instance, baseline_root, log_path):
                 elapsed = perf_counter() - started
                 connection.send(("finished", elapsed))
                 check = check_trace(instance, frames)
+                saved = save_plan(plan_path, instance, solver, check, frames)
                 stream.flush()
-                connection.send(("result", Attempt(check.status, elapsed, check.makespan, check.detail)))
+                connection.send(("result", Attempt(check.status, elapsed, check.makespan, check.detail, plan_path=saved)))
             except Exception as error:
                 if started is not None and elapsed is None:
                     elapsed = perf_counter() - started
@@ -138,10 +163,10 @@ def worker(connection, solver, instance, baseline_root, log_path):
                 connection.send(("result", Attempt("crash", elapsed, detail=f"{type(error).__name__}: {error}")))
 
 
-def run_attempt(solver, instance, timeout_s, baseline_root, log_path):
+def run_attempt(solver, instance, timeout_s, baseline_root, log_path, plan_path=None, source_root=None):
     context = get_context("spawn")
     parent, child = context.Pipe()
-    process = context.Process(target=worker, args=(child, solver, instance, baseline_root, log_path))
+    process = context.Process(target=worker, args=(child, solver, instance, baseline_root, log_path, plan_path, source_root))
     with parent, child:
         process.start()
         child.close()

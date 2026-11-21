@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MAPF-HD — выполнение плана</title>
+<style>
+  :root { color-scheme:light; font-family:"Segoe UI",Tahoma,sans-serif; color:#17394a; background:#eef3f6; }
+  * { box-sizing:border-box; }
+  body { margin:0; }
+  main { max-width:1500px; margin:auto; padding:24px 28px; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; }
+  h1 { font-size:24px; font-weight:650; letter-spacing:-.5px; margin:0 0 5px; }
+  p { margin:0; }
+  #metadata { font-size:14px; color:#526d7b; overflow-wrap:anywhere; }
+  #outcome { border:1px solid #b8cbd1; border-radius:5px; padding:7px 12px; white-space:nowrap; font-size:14px; background:white; }
+  #outcome.solved { color:#08604b; border-color:#a8cdbc; background:#f2faf6; }
+  .viewer { border:1px solid #c9d7de; background:white; border-radius:8px; overflow:hidden; }
+  .toolbar { display:flex; align-items:center; flex-wrap:wrap; gap:10px 20px; padding:12px 16px; border-bottom:1px solid #dce5e9; font-size:14px; }
+  .toolbar label { display:flex; align-items:center; gap:7px; }
+  button,select { font:inherit; color:inherit; background:white; border:1px solid #bdcdd5; border-radius:5px; min-height:36px; padding:6px 12px; cursor:pointer; }
+  button:hover { background:#edf5f7; }
+  button:disabled { opacity:.4; cursor:default; }
+  button:focus-visible,select:focus-visible,input:focus-visible { outline:3px solid #d58716; outline-offset:3px; }
+  input[type=checkbox] { accent-color:#08687a; width:16px; height:16px; }
+  #view { height:clamp(240px,60vh,740px); overflow:auto; background:#e7eef2; text-align:center; }
+  canvas { display:block; margin:auto; touch-action:pan-x pan-y; }
+  .transport { display:flex; align-items:center; gap:8px; padding:14px 16px 10px; }
+  #play { background:#08687a; color:white; border-color:#08687a; min-width:86px; font-weight:600; }
+  #play:hover { background:#055b6b; }
+  #tick { margin-left:auto; font-variant-numeric:tabular-nums; white-space:nowrap; font-size:14px; }
+  .scrubber { display:flex; align-items:center; gap:14px; padding:0 18px 14px; font-size:12px; color:#526d7b; }
+  #timeline { width:100%; accent-color:#08687a; cursor:pointer; min-height:28px; margin:0; }
+  .legend { display:flex; flex-wrap:wrap; align-items:center; gap:10px 20px; padding:12px 16px; border-top:1px solid #dce5e9; font-size:13px; }
+  .legend span { display:inline-flex; align-items:center; gap:7px; }
+  .symbol { width:13px; height:13px; display:inline-block; flex-shrink:0; }
+  .target { border-radius:50%; background:#c54c39; }
+  .goal { border:2px solid #c54c39; }
+  .blocker { background:#8295a0; border-radius:2px; }
+  .wall { background:#294653; }
+  #inspect { margin-left:auto; font-variant-numeric:tabular-nums; }
+  #targets { display:flex; flex-wrap:wrap; gap:7px; margin:14px 0 10px; }
+  .agent { display:flex; align-items:center; gap:8px; text-align:left; font-size:13px; min-height:34px; padding:5px 10px; }
+  .agent[aria-pressed=true] { background:#e3eef2; border-color:#466879; }
+  .swatch { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
+  .agent small { font-size:12px; color:#526d7b; font-variant-numeric:tabular-nums; }
+  footer { font-size:13px; color:#526d7b; line-height:1.6; }
+  #detail { overflow-wrap:anywhere; }
+  #trace-state { font-weight:600; color:#17394a; }
+  .shortcuts { margin-top:5px; }
+  @media(max-width:600px) { main { padding:16px 10px; } header { align-items:flex-start; } h1 { font-size:21px; } #outcome { font-size:12px; padding:6px 8px; } .toolbar { padding:10px; gap:10px 14px; } .transport { padding:12px 10px 8px; gap:5px; } .transport button { padding:6px 9px; } #tick { font-size:12px; } #inspect { margin-left:0; width:100%; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div><h1>Выполнение плана MAPF-HD</h1><p id="metadata"></p></div>
+    <span id="outcome"></span>
+  </header>
+  <section class="viewer" aria-label="Проигрыватель плана">
+    <div class="toolbar">
+      <label for="speed">Скорость <select id="speed"><option value="0.5">0,5 такта/с</option><option value="1">1 такт/с</option><option value="2">2 такта/с</option><option value="4" selected>4 такта/с</option><option value="8">8 тактов/с</option><option value="16">16 тактов/с</option><option value="32">32 такта/с</option></select></label>
+      <label for="zoom">Масштаб <select id="zoom"><option value="1">По размеру окна</option><option value="1.5">150%</option><option value="2">200%</option><option value="3">300%</option><option value="4">400%</option></select></label>
+      <button id="fit" type="button">Вместить карту</button>
+      <label><input id="show-ids" type="checkbox">Номера агентов</label>
+    </div>
+    <div id="view"><canvas id="canvas" role="img" aria-label="Карта на такте 0"></canvas></div>
+    <div class="transport">
+      <button id="back" type="button" aria-label="Предыдущий такт" title="Предыдущий такт (стрелка влево)">‹ Шаг</button>
+      <button id="play" type="button" aria-pressed="false">Пуск</button>
+      <button id="forward" type="button" aria-label="Следующий такт" title="Следующий такт (стрелка вправо)">Шаг ›</button>
+      <output id="tick" for="timeline"></output>
+    </div>
+    <div class="scrubber"><span>0</span><input id="timeline" aria-label="Такт" type="range" min="0" max="0" value="0" step="1"><span id="last-tick"></span></div>
+    <div class="legend">
+      <span><i class="symbol target"></i>Целевой агент</span><span><i class="symbol goal"></i>Его цель</span>
+      <span><i class="symbol blocker"></i>Блокирующий агент</span><span><i class="symbol wall"></i>Стена</span>
+      <span id="inspect">Наведите указатель на клетку</span>
+    </div>
+  </section>
+  <div id="targets" aria-label="Целевые агенты"></div>
+  <footer><p id="trace-state" role="status"></p><p id="detail"></p><p class="shortcuts">Пробел: пуск / пауза. Стрелки: шаг назад / вперёд. Home / End: первый / последний такт. Выберите агента, чтобы найти его на карте. Координаты — (x, y), начало (0, 0) в левом верхнем углу.</p></footer>
+</main>
+<script id="replay-data" type="application/json">__REPLAY_DATA__</script>
+<script>
+"use strict";
+(() => {
+  const data = JSON.parse(document.getElementById("replay-data").textContent);
+  const instance = data.instance, grid = instance.map, frames = data.frames;
+  const $ = id => document.getElementById(id);
+  const canvas = $("canvas"), context = canvas.getContext("2d"), view = $("view");
+  const backdrop = document.createElement("canvas"), background = backdrop.getContext("2d");
+  const colors = ["#c54c39", "#147fa1", "#7257b6", "#b07908", "#27845b", "#bd4c88", "#4878c7", "#835b3c", "#588326", "#8e518d", "#a45d11", "#217c79"];
+  const color = i => i < colors.length ? colors[i] : `hsl(${(i * 137.508) % 360} 55% 40%)`;
+  const last = frames.length - 1, margin = 30;
+  let tick = 0, cell = 16, width = 0, height = 0, playing = false, previousTime = null, accumulated = 0;
+  let selected = null, hover = null, animation = null;
+  const targetButtons = [];
+  const statusNames = {solved:"решено", unsolved:"не решено", timeout:"лимит времени", invalid:"недопустимый план", crash:"ошибка решателя", error:"ошибка"};
+  const detailNames = {"trace ended before all goals were reached":"Запись завершилась до того, как все агенты достигли своих целей.", "no trace returned":"Решатель не вернул запись плана."};
+  $("metadata").textContent = `${instance.id} / ${data.solver || "Решатель не указан"} / ${grid.width} × ${grid.height} / Агентов: ${instance.starts.length}`;
+  $("outcome").textContent = data.status === "solved" ? `Решено на такте ${data.makespan}` : "План не завершён";
+  $("outcome").className = data.status;
+  $("detail").textContent = [detailNames[data.detail] || data.detail, data.reported_status && data.reported_status !== data.status ? `Результат решателя: ${statusNames[data.reported_status] || data.reported_status}.` : ""].filter(Boolean).join(" ");
+  $("timeline").max = last;
+  $("last-tick").textContent = last;
+  grid.goals.forEach((goal, i) => {
+    const button = document.createElement("button");
+    button.type = "button"; button.className = "agent";
+    button.setAttribute("aria-pressed", "false");
+    const swatch = document.createElement("i"); swatch.className = "swatch"; swatch.style.background = color(i);
+    const name = document.createElement("span"); name.textContent = `Агент ${i}`;
+    const position = document.createElement("small");
+    button.append(swatch, name, position);
+    button.addEventListener("click", () => {
+      selected = selected === i ? null : i;
+      if (selected !== null) {
+        const [x, y] = frames[tick][selected];
+        view.scrollTo({ left:margin + (x + .5) * cell - view.clientWidth / 2, top:margin + (y + .5) * cell - view.clientHeight / 2 });
+      }
+      draw();
+    });
+    $("targets").append(button); targetButtons.push({button, position});
+  });
+
+  function layout() {
+    const base = Math.max(4, Math.min(40, Math.floor(Math.min((view.clientWidth - margin * 2) / grid.width, (view.clientHeight - margin * 2) / grid.height))));
+    cell = base * Number($("zoom").value);
+    width = margin * 2 + cell * grid.width; height = margin * 2 + cell * grid.height;
+    const scale = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.style.width = `${width}px`; canvas.style.height = `${height}px`;
+    canvas.width = Math.ceil(width * scale); canvas.height = Math.ceil(height * scale);
+    backdrop.width = canvas.width; backdrop.height = canvas.height;
+    background.setTransform(scale, 0, 0, scale, 0, 0);
+    background.fillStyle = "#e7eef2"; background.fillRect(0, 0, width, height);
+    background.fillStyle = "#fff"; background.fillRect(margin, margin, grid.width * cell, grid.height * cell);
+    background.strokeStyle = "#e1e9ed"; background.lineWidth = .7;
+    background.beginPath();
+    for (let x = 0; x <= grid.width; x++) { background.moveTo(margin + x * cell, margin); background.lineTo(margin + x * cell, height - margin); }
+    for (let y = 0; y <= grid.height; y++) { background.moveTo(margin, margin + y * cell); background.lineTo(width - margin, margin + y * cell); }
+    background.stroke();
+    background.fillStyle = "#294653";
+    grid.walls.forEach(([x,y]) => background.fillRect(margin + x * cell, margin + y * cell, cell, cell));
+    background.font = '11px "Segoe UI",sans-serif'; background.fillStyle = "#526d7b"; background.textAlign = "center"; background.textBaseline = "middle";
+    const interval = Math.max(1, Math.ceil(32 / cell));
+    for (let x = 0; x < grid.width; x += interval) background.fillText(x, margin + (x + .5) * cell, margin / 2);
+    background.textAlign = "right";
+    for (let y = 0; y < grid.height; y += interval) background.fillText(y, margin - 8, margin + (y + .5) * cell);
+    draw();
+  }
+
+  function draw() {
+    const scale = Math.min(window.devicePixelRatio || 1, 2);
+    context.setTransform(1, 0, 0, 1, 0, 0); context.drawImage(backdrop, 0, 0);
+    context.setTransform(scale, 0, 0, scale, 0, 0);
+    const frame = frames[tick], showIds = $("show-ids").checked;
+    frame.forEach(([x,y], i) => {
+      const cx = margin + (x + .5) * cell, cy = margin + (y + .5) * cell;
+      context.fillStyle = i < grid.goals.length ? color(i) : "#8295a0";
+      if (i < grid.goals.length) { context.beginPath(); context.arc(cx, cy, cell * .34, 0, Math.PI * 2); context.fill(); }
+      else context.fillRect(cx - cell * .24, cy - cell * .24, cell * .48, cell * .48);
+      if (showIds && cell >= 12) {
+        context.font = `${Math.max(7, Math.min(13, cell * .30))}px "Segoe UI",sans-serif`;
+        context.textAlign = "center"; context.textBaseline = "middle"; context.fillStyle = i < grid.goals.length ? "white" : "#132f3d"; context.fillText(i, cx, cy, cell * .65);
+      }
+    });
+    grid.goals.forEach(([x,y], i) => {
+      context.strokeStyle = color(i); context.lineWidth = Math.max(1.2, cell * .07);
+      context.strokeRect(margin + (x + .09) * cell, margin + (y + .09) * cell, cell * .82, cell * .82);
+    });
+    if (selected !== null) {
+      const [x,y] = frame[selected]; context.strokeStyle = "#17394a"; context.lineWidth = 2;
+      context.beginPath(); context.arc(margin + (x + .5) * cell, margin + (y + .5) * cell, cell * .47, 0, Math.PI * 2); context.stroke();
+    }
+    if (hover) {
+      const [x,y] = hover, index = frame.findIndex(p => p[0] === x && p[1] === y);
+      const goal = grid.goals.findIndex(p => p[0] === x && p[1] === y);
+      $("inspect").textContent = `(${x}, ${y})${index >= 0 ? ` / ${index < grid.goals.length ? "Целевой агент" : "Блокирующий агент"} ${index}` : ""}${goal >= 0 ? ` / Цель ${goal}` : ""}`;
+    }
+    $("tick").textContent = `Такт ${tick} / ${last}`;
+    $("timeline").value = tick;
+    $("back").disabled = tick === 0; $("forward").disabled = tick === last; $("play").disabled = last === 0;
+    canvas.setAttribute("aria-label", `Карта на такте ${tick}. Столбцов: ${grid.width}, строк: ${grid.height}.`);
+    const reached = grid.goals.filter(([x,y], i) => frame[i][0] === x && frame[i][1] === y).length;
+    $("trace-state").textContent = `${reached} / ${grid.goals.length} агентов у своих целей${tick === last ? " / Конец записи" : ""}`;
+    targetButtons.forEach(({button, position}, i) => {
+      position.textContent = `(${frame[i].join(", ")}) → (${grid.goals[i].join(", ")})`;
+      button.setAttribute("aria-pressed", String(selected === i));
+    });
+  }
+
+  function pause() {
+    if (animation !== null) cancelAnimationFrame(animation);
+    animation = null;
+    playing = false; previousTime = null; accumulated = 0;
+    $("play").textContent = "Пуск"; $("play").setAttribute("aria-pressed", "false");
+  }
+  function seek(value) { pause(); tick = Math.max(0, Math.min(last, Number(value))); draw(); }
+  function toggle() {
+    if (playing) { pause(); return; }
+    if (last === 0) return;
+    if (tick === last) tick = 0;
+    playing = true; previousTime = null; accumulated = 0;
+    $("play").textContent = "Пауза"; $("play").setAttribute("aria-pressed", "true"); draw(); animation = requestAnimationFrame(animate);
+  }
+  function animate(time) {
+    animation = null;
+    if (!playing) return;
+    if (previousTime !== null) accumulated += Math.min(time - previousTime, 1000);
+    previousTime = time;
+    const interval = 1000 / Number($("speed").value);
+    if (accumulated >= interval) {
+      const steps = Math.floor(accumulated / interval); accumulated %= interval;
+      tick = Math.min(last, tick + steps); draw();
+      if (tick === last) { pause(); return; }
+    }
+    animation = requestAnimationFrame(animate);
+  }
+  $("play").addEventListener("click", toggle);
+  $("back").addEventListener("click", () => seek(tick - 1));
+  $("forward").addEventListener("click", () => seek(tick + 1));
+  $("timeline").addEventListener("input", event => seek(event.target.value));
+  $("show-ids").addEventListener("change", draw);
+  $("zoom").addEventListener("change", layout);
+  $("fit").addEventListener("click", () => { $("zoom").value = "1"; layout(); view.scrollTo(0, 0); });
+  $("speed").addEventListener("change", () => { accumulated = 0; previousTime = null; });
+  canvas.addEventListener("mousemove", event => {
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor((event.clientX - rect.left - margin) / cell), y = Math.floor((event.clientY - rect.top - margin) / cell);
+    hover = x >= 0 && y >= 0 && x < grid.width && y < grid.height ? [x,y] : null;
+    if (hover) draw(); else $("inspect").textContent = "Наведите указатель на клетку";
+  });
+  canvas.addEventListener("mouseleave", () => { hover = null; $("inspect").textContent = "Наведите указатель на клетку"; });
+  document.addEventListener("keydown", event => {
+    if (["INPUT", "SELECT", "BUTTON", "TEXTAREA"].includes(event.target.tagName) || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.code === "Space") { event.preventDefault(); toggle(); }
+    else if (event.key === "ArrowLeft") { event.preventDefault(); seek(tick - 1); }
+    else if (event.key === "ArrowRight") { event.preventDefault(); seek(tick + 1); }
+    else if (event.key === "Home") { event.preventDefault(); seek(0); }
+    else if (event.key === "End") { event.preventDefault(); seek(last); }
+  });
+  document.addEventListener("visibilitychange", () => { if (document.hidden) pause(); });
+  window.addEventListener("resize", layout);
+  layout();
+})();
+</script>
+</body>
+</html>

@@ -17,7 +17,8 @@ from .maps import DATASET_VERSION, DEFAULT_DENSITIES, DEFAULT_SEEDS, MAPS, Insta
 from .reports import RESULT_FIELDS, write_reports
 from .runner import PHANS_COMMIT, PHANS_PARAMETERS, ROOT, Solver, extract_baseline, run_attempt
 
-PLOT_NAMES = ("success", "runtime", "makespan", "budget", "paired")
+PLOT_NAMES = ("success", "runtime", "makespan", "budget", "paired",
+              "runtime_box", "makespan_box", "success_box", "success_heatmap")
 
 
 def add_profile_arguments(parser):
@@ -42,6 +43,21 @@ def make_parser():
     run.add_argument("--baseline", default="phans", help="solver name used in paired comparisons")
     run.add_argument("--timeout", type=float, default=180, metavar="SECONDS")
     run.add_argument("--out", type=Path, help="a new output directory")
+
+    report = commands.add_parser("report", help="build an HTML report from a completed run")
+    report.add_argument("run_dir", type=Path)
+    report.add_argument("--out", type=Path, help="new folder for an exported report")
+    report.add_argument("--solver", action="append", dest="solvers", help="select solver names")
+    report.add_argument("--map", action="append", dest="maps")
+    report.add_argument("--density", nargs="+", type=int)
+
+    replay = commands.add_parser("replay", help="view agent movement in an offline HTML player")
+    replay.add_argument("run_dir", type=Path)
+    replay.add_argument("--scenario", required=True, help="saved scenario ID")
+    replay.add_argument("--solver", required=True, help="solver name in run.json")
+    replay.add_argument("--rerun", action="store_true", help="make a separate replay attempt if a trace was not saved")
+    replay.add_argument("--timeout", type=float, help="planning budget for --rerun")
+    replay.add_argument("--out", type=Path, help="output HTML file")
 
     plot = commands.add_parser("plot", help="draw PNG plots from a completed run")
     plot.add_argument("run_dir", type=Path)
@@ -151,7 +167,13 @@ def run_benchmark(args):
             "timeout_s": args.timeout,
         })
         results = execute(output, instances, solvers, args.timeout, baseline_root)
-        write_reports(output, results, args.baseline)
+        manifest_path = output / "run.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["finished_at"] = datetime.now(timezone.utc).isoformat()
+        write_json(manifest_path, manifest)
+        from .artifacts import build_report
+
+        build_report(output)
     print(f"Reports: {output}", flush=True)
 
 
@@ -159,6 +181,7 @@ def execute(output, instances, solvers, timeout_s, baseline_root):
     rows = []
     for solver in solvers:
         (output / "logs" / solver.name).mkdir()
+        (output / "plans" / solver.name).mkdir(parents=True, exist_ok=True)
     with (output / "results.csv").open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=RESULT_FIELDS)
         writer.writeheader()
@@ -168,7 +191,8 @@ def execute(output, instances, solvers, timeout_s, baseline_root):
             offset = index % len(solvers)
             for solver in solvers[offset:] + solvers[:offset]:
                 log = output / "logs" / solver.name / f"{instance.id}.log"
-                attempt = run_attempt(solver, instance, timeout_s, baseline_root, log)
+                plan = output / "plans" / solver.name / f"{instance.id}.json.gz"
+                attempt = run_attempt(solver, instance, timeout_s, baseline_root, log, plan)
                 row = {
                     "instance_id": instance.id, "map": instance.map.id, "density_pct": instance.density,
                     "actual_density_pct": instance.actual_density * 100, "paper_density_pct": instance.paper_density * 100,
@@ -176,6 +200,7 @@ def execute(output, instances, solvers, timeout_s, baseline_root):
                     "solver": solver.name, "solver_source_sha256": attempt.source_sha256,
                     "status": attempt.status, "computation_time_s": attempt.computation_time_s,
                     "makespan": attempt.makespan, "timeout_s": timeout_s, "detail": attempt.detail,
+                    "plan_path": Path(attempt.plan_path).relative_to(output).as_posix() if attempt.plan_path else "",
                 }
                 writer.writerow(row)
                 stream.flush()
@@ -199,6 +224,16 @@ def main():
             from .plots import plot_results
 
             plot_results(args)
+        elif args.command == "report":
+            from .artifacts import build_report
+
+            build_report(args.run_dir, output=args.out, solvers=args.solvers, maps=args.maps, densities=args.density)
+        elif args.command == "replay":
+            from .artifacts import replay_run
+
+            if args.timeout is not None and not args.rerun:
+                raise ValueError("--timeout applies to --rerun")
+            replay_run(args)
     except (KeyError, TypeError, ValueError, OSError, ImportError) as error:
         parser.error(str(error))
 

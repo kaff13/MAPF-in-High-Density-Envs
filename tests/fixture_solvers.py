@@ -9,6 +9,12 @@ def follow_blocker(instance):
     return [instance.starts, ((1, 0), (2, 0))]
 
 
+def numpy_plan(instance):
+    import numpy as np
+
+    return np.array(move_blocker(instance))
+
+
 def stall(instance):
     sleep(5)
 
