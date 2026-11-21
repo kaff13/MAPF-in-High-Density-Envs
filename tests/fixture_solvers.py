@@ -15,6 +15,14 @@ def numpy_plan(instance):
     return np.array(move_blocker(instance))
 
 
+def waited_plan(instance):
+    return [instance.starts, *move_blocker(instance)]
+
+
+def empty_plan(instance):
+    return []
+
+
 def stall(instance):
     sleep(5)
 

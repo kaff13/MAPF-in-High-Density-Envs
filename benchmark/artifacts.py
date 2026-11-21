@@ -30,7 +30,7 @@ def inside_run(directory, relative):
 
 
 def build_report(run_dir, *, output=None, solvers=None, maps=None, densities=None):
-    from .plots import render_plots
+    from .plots import REPORT_PLOT_NAMES, render_plots
 
     run_dir = run_dir.resolve()
     manifest, rows = read_run(run_dir)
@@ -46,6 +46,8 @@ def build_report(run_dir, *, output=None, solvers=None, maps=None, densities=Non
     ]
     if not selected:
         raise ValueError("no rows match report filters")
+    if any(not IDENTIFIER.fullmatch(row["map"]) for row in selected):
+        raise ValueError("invalid map ID in report data")
     filtered = bool(solvers or maps or densities)
     if output is None:
         output = run_dir / "reports" / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ") if filtered else run_dir
@@ -54,7 +56,7 @@ def build_report(run_dir, *, output=None, solvers=None, maps=None, densities=Non
         raise ValueError("filtered reports need a separate output directory")
     if output != run_dir:
         output.mkdir(parents=True, exist_ok=False)
-        for folder in ("instances", "logs", "plans", "replays"):
+        for folder in ("instances", "logs", "plans"):
             for row in selected:
                 if folder == "instances":
                     relative = Path(folder) / f'{row["instance_id"]}.json'
@@ -63,8 +65,7 @@ def build_report(run_dir, *, output=None, solvers=None, maps=None, densities=Non
                         continue
                     relative = Path(row["plan_path"])
                 else:
-                    suffix = ".log" if folder == "logs" else ".html"
-                    relative = Path(folder) / row["solver"] / f'{row["instance_id"]}{suffix}'
+                    relative = Path(folder) / row["solver"] / f'{row["instance_id"]}.log'
                 source = inside_run(run_dir, relative)
                 if source.is_file():
                     target = inside_run(output, relative)
@@ -93,8 +94,17 @@ def build_report(run_dir, *, output=None, solvers=None, maps=None, densities=Non
         fields = list(dict.fromkeys([*RESULT_FIELDS, *(key for row in selected for key in row)]))
         write_csv(output / "results.csv", fields, selected)
     write_reports(output, selected, baseline)
-    plots = render_plots(selected, baseline, output / "plots")
-    destination = write_html_report(output, selected, baseline, plots)
+    plots = render_plots(selected, baseline, output / "plots", REPORT_PLOT_NAMES)
+    map_plots = {}
+    for map_id in sorted({row["map"] for row in selected}):
+        cases = [row for row in selected if row["map"] == map_id]
+        map_output = output / "maps" / map_id
+        map_output.mkdir(parents=True, exist_ok=True)
+        write_reports(map_output, cases, baseline)
+        fields = list(dict.fromkeys([*RESULT_FIELDS, *(key for row in cases for key in row)]))
+        write_csv(map_output / "results.csv", fields, cases)
+        map_plots[map_id] = render_plots(cases, baseline, map_output / "plots", REPORT_PLOT_NAMES)
+    destination = write_html_report(output, selected, baseline, plots, map_plots=map_plots)
     print(destination, flush=True)
     return destination
 
@@ -113,88 +123,125 @@ def archived_source(run_dir, manifest):
     return archive
 
 
+def prepare_replay_trace(plan, instance):
+    if not plan.get("frames"):
+        plan["frames"] = [instance.starts]
+        plan["trace_available"] = False
+    return plan
+
+
+def replay_plan(directory, manifest, instance, row, generation_dir, pair_dir, *, force=False, timeout=None):
+    from .replay import load_plan
+
+    solver_name = row["solver"]
+    paths = []
+    if row.get("plan_path"):
+        paths.append(inside_run(directory, row["plan_path"]))
+    paths.append(directory / "plans" / solver_name / f"{instance.id}.json.gz")
+    cached = pair_dir / instance.id
+    if cached.is_dir():
+        paths.extend(sorted(cached.glob(f"*/{solver_name}.json.gz"), reverse=True))
+    paths.append(directory / "replays" / solver_name / f"{instance.id}.rerun.json.gz")
+    if not force:
+        for path in paths:
+            if path.is_file():
+                plan = load_plan(path)
+                if plan.get("instance_id") != instance.id or plan.get("solver") != solver_name:
+                    raise ValueError("saved plan belongs to another scenario or solver")
+                metadata_path = path.with_name(path.name.removesuffix(".json.gz") + ".metadata.json")
+                if not metadata_path.is_file() and path.name.endswith(".rerun.json.gz"):
+                    metadata_path = path.with_name(path.name.removesuffix(".rerun.json.gz") + ".rerun-metadata.json")
+                if metadata_path.is_file():
+                    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+                    plan["provenance"] = metadata.get("source_provenance") or (
+                        "fingerprinted archive" if metadata.get("source_root") else
+                        "pinned PHANS" if manifest["solvers"][solver_name] is None else "current Python adapter"
+                    )
+                    plan["replay_attempt"] = True
+                return prepare_replay_trace(plan, instance)
+
+    budget = row["timeout_s"] if timeout is None else timeout
+    if budget is None or not 0 < budget < float("inf"):
+        raise ValueError("replay timeout must be finite and positive")
+    entrypoint = manifest["solvers"][solver_name]
+    archive = archived_source(directory, manifest) if entrypoint else None
+    generation_dir.mkdir(parents=True, exist_ok=True)
+    plan_path = generation_dir / f"{solver_name}.json.gz"
+    with tempfile.TemporaryDirectory(prefix="mapf-hd-replay-") as temporary:
+        baseline_root = Path(temporary) / "baseline"
+        if entrypoint is None:
+            extract_baseline(baseline_root)
+        attempt = run_attempt(
+            Solver(solver_name, entrypoint), instance, budget, baseline_root,
+            generation_dir / f"{solver_name}.log", plan_path, source_root=archive,
+        )
+    provenance = "fingerprinted archive" if archive else "pinned PHANS" if entrypoint is None else "current Python adapter"
+    metadata = {
+        "instance_id": instance.id, "solver": solver_name,
+        "recorded_status": row["status"], "recorded_makespan": row["makespan"],
+        "rerun_status": attempt.status, "rerun_makespan": attempt.makespan,
+        "rerun_time_s": attempt.computation_time_s, "timeout_s": budget,
+        "source_root": str(archive) if archive else None, "source_provenance": provenance,
+        "solver_source_sha256": attempt.source_sha256, "detail": attempt.detail,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    (generation_dir / f"{solver_name}.metadata.json").write_text(
+        json.dumps(metadata, indent=2) + "\n", encoding="utf-8",
+    )
+    if attempt.plan_path:
+        plan = load_plan(plan_path)
+    else:
+        plan = {
+            "instance_id": instance.id, "solver": solver_name,
+            "status": attempt.status, "frames": [instance.starts],
+            "trace_available": False, "detail": attempt.detail,
+        }
+    plan["provenance"] = provenance
+    plan["replay_attempt"] = True
+    return prepare_replay_trace(plan, instance)
+
+
 def replay_run(args):
-    from .replay import load_plan, write_replay
+    from .replay import write_paired_replay
 
     directory = args.run_dir.resolve()
     manifest = json.loads((directory / "run.json").read_text(encoding="utf-8"))
-    if args.scenario not in manifest["instance_ids"] or args.solver not in manifest["solvers"]:
-        raise ValueError("scenario or solver is absent from this run")
-    if not IDENTIFIER.fullmatch(args.scenario) or not IDENTIFIER.fullmatch(args.solver):
+    baseline = args.baseline or manifest["comparison_baseline"]
+    candidate = args.solver
+    if candidate == baseline:
+        raise ValueError("choose a candidate different from the baseline for paired playback")
+    names = (baseline, candidate)
+    if args.scenario not in manifest["instance_ids"] or any(name not in manifest["solvers"] for name in names):
+        raise ValueError("scenario, baseline or candidate is absent from this run")
+    if not all(IDENTIFIER.fullmatch(value) for value in (args.scenario, *names)):
         raise ValueError("invalid scenario or solver name")
+    pair_dir = directory / "replays" / f"{baseline}-vs-{candidate}"
+    destination = args.out or pair_dir / f"{args.scenario}.html"
+    if destination.suffix.lower() != ".html" or destination.resolve() == directory / "report.html":
+        raise ValueError("replay output must be an HTML player file distinct from report.html")
+    if args.timeout is not None and not 0 < args.timeout < float("inf"):
+        raise ValueError("replay timeout must be finite and positive")
     instance = Instance.from_json(json.loads(
         inside_run(directory, Path("instances") / f"{args.scenario}.json").read_text(encoding="utf-8")
     ))
-    rows = read_results(directory / "results.csv")
-    row = next((row for row in rows if row["instance_id"] == args.scenario and row["solver"] == args.solver), None)
-    if row is None:
-        raise ValueError("this scenario and solver have no recorded result")
-    replay_dir = directory / "replays" / args.solver
-    plan_path = inside_run(directory, row["plan_path"]) if row.get("plan_path") else directory / "plans" / args.solver / f"{args.scenario}.json.gz"
-    if args.rerun:
-        replay_dir.mkdir(parents=True, exist_ok=True)
-        budget = row["timeout_s"] if args.timeout is None else args.timeout
-        if budget is None or not 0 < budget < float("inf"):
-            raise ValueError("replay timeout must be finite and positive")
-        entrypoint = manifest["solvers"][args.solver]
-        solver = Solver(args.solver, entrypoint)
-        archive = archived_source(directory, manifest) if entrypoint else None
-        plan_path = replay_dir / f"{args.scenario}.rerun.json.gz"
-        if plan_path.exists():
-            raise ValueError("rerun already exists; use replay without --rerun to view it")
-        with tempfile.TemporaryDirectory(prefix="mapf-hd-replay-") as temporary:
-            baseline_root = Path(temporary) / "baseline"
-            if entrypoint is None:
-                extract_baseline(baseline_root)
-            attempt = run_attempt(
-                solver, instance, budget, baseline_root, replay_dir / f"{args.scenario}.log",
-                plan_path, source_root=archive,
-            )
-        rerun_metadata = {
-            "instance_id": args.scenario, "solver": args.solver,
-            "recorded_status": row["status"], "recorded_makespan": row["makespan"],
-            "rerun_status": attempt.status, "rerun_makespan": attempt.makespan,
-            "rerun_time_s": attempt.computation_time_s, "timeout_s": budget,
-            "source_root": str(archive) if archive else None,
-            "source_provenance": "fingerprinted archive" if archive else "pinned PHANS" if entrypoint is None else "current Python adapter",
-            "recorded_solver_source_sha256": row.get("solver_source_sha256"),
-            "solver_source_sha256": attempt.source_sha256,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-            "detail": attempt.detail,
-        }
-        (replay_dir / f"{args.scenario}.rerun-metadata.json").write_text(
-            json.dumps(rerun_metadata, indent=2) + "\n", encoding="utf-8",
+    matching = [
+        row for row in read_results(directory / "results.csv")
+        if row["instance_id"] == args.scenario and row["solver"] in names
+    ]
+    if len(matching) != 2 or {row["solver"] for row in matching} != set(names):
+        raise ValueError("the scenario must have one recorded result for each selected solver")
+    result_by_solver = {row["solver"]: row for row in matching}
+    generation_dir = pair_dir / args.scenario / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    plans = [
+        replay_plan(
+            directory, manifest, instance, result_by_solver[name], generation_dir, pair_dir,
+            force=args.rerun, timeout=args.timeout,
         )
-        if not attempt.plan_path:
-            raise ValueError(f"replay attempt returned no trace: {attempt.status}. {attempt.detail}")
-    elif not plan_path.is_file():
-        rerun_plan = replay_dir / f"{args.scenario}.rerun.json.gz"
-        if rerun_plan.is_file():
-            plan_path = rerun_plan
-        else:
-            raise ValueError("no saved trace; add --rerun to obtain a new plan without changing recorded metrics")
-    plan = load_plan(plan_path)
-    if plan.get("instance_id") != instance.id or plan.get("solver") != args.solver:
-        raise ValueError("saved plan belongs to another scenario or solver")
-    detail = plan.get("detail", "")
-    if plan_path.name.endswith(".rerun.json.gz"):
-        metadata_file = replay_dir / f"{args.scenario}.rerun-metadata.json"
-        metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
-        source_provenance = metadata.get("source_provenance")
-        if source_provenance is None:
-            source_provenance = (
-                "fingerprinted archive" if metadata.get("source_root") else
-                "pinned PHANS" if manifest["solvers"][args.solver] is None else "current Python adapter"
-            )
-        provenance = {
-            "fingerprinted archive": "Исполнены архивные исходники, проверенные по хешам.",
-            "pinned PHANS": "Исполнен закреплённый оригинальный PHANS.",
-            "current Python adapter": "Исполнена текущая версия Python-адаптера.",
-        }[source_provenance]
-        detail = "Отдельная попытка для просмотра. Исходные метрики сохранены. " + provenance + " " + detail
-    destination = args.out or replay_dir / f"{args.scenario}.html"
-    if destination.suffix.lower() != ".html" or destination.resolve() == directory / "report.html":
-        raise ValueError("replay output must be an HTML player file distinct from report.html")
-    page = write_replay(instance, plan["frames"], destination, solver_name=args.solver, status=plan["status"], detail=detail)
+        for name in names
+    ]
+    for name, plan in zip(names, plans):
+        plan["recorded_status"] = result_by_solver[name]["status"]
+        plan["recorded_makespan"] = result_by_solver[name]["makespan"]
+    page = write_paired_replay(instance, plans[0], plans[1], destination)
     print(page, flush=True)
     return page

@@ -16,6 +16,7 @@ import tempfile
 from .maps import DATASET_VERSION, DEFAULT_DENSITIES, DEFAULT_SEEDS, MAPS, Instance, parse_scenario, scenario_ids
 from .reports import RESULT_FIELDS, write_reports
 from .runner import PHANS_COMMIT, PHANS_PARAMETERS, ROOT, Solver, extract_baseline, run_attempt
+from .plots import REPORT_PLOT_NAMES
 
 PLOT_NAMES = ("success", "runtime", "makespan", "budget", "paired",
               "runtime_box", "makespan_box", "success_box", "success_heatmap")
@@ -51,17 +52,18 @@ def make_parser():
     report.add_argument("--map", action="append", dest="maps")
     report.add_argument("--density", nargs="+", type=int)
 
-    replay = commands.add_parser("replay", help="view agent movement in an offline HTML player")
+    replay = commands.add_parser("replay", help="compare two plans in a synchronized HTML player")
     replay.add_argument("run_dir", type=Path)
     replay.add_argument("--scenario", required=True, help="saved scenario ID")
-    replay.add_argument("--solver", required=True, help="solver name in run.json")
-    replay.add_argument("--rerun", action="store_true", help="make a separate replay attempt if a trace was not saved")
-    replay.add_argument("--timeout", type=float, help="planning budget for --rerun")
+    replay.add_argument("--solver", required=True, help="candidate name in run.json")
+    replay.add_argument("--baseline", help="reference name (default: the run's comparison baseline)")
+    replay.add_argument("--rerun", action="store_true", help="recompute both plans for this replay")
+    replay.add_argument("--timeout", type=float, help="budget for obtaining a missing or recomputed plan")
     replay.add_argument("--out", type=Path, help="output HTML file")
 
     plot = commands.add_parser("plot", help="draw PNG plots from a completed run")
     plot.add_argument("run_dir", type=Path)
-    plot.add_argument("--kind", nargs="+", choices=PLOT_NAMES, default=PLOT_NAMES)
+    plot.add_argument("--kind", nargs="+", choices=PLOT_NAMES, default=REPORT_PLOT_NAMES)
     plot.add_argument("--map", action="append", dest="maps")
     plot.add_argument("--density", nargs="+", type=int)
     plot.add_argument("--solver", action="append", dest="solvers", help="repeat to select solver names")
@@ -231,8 +233,6 @@ def main():
         elif args.command == "replay":
             from .artifacts import replay_run
 
-            if args.timeout is not None and not args.rerun:
-                raise ValueError("--timeout applies to --rerun")
             replay_run(args)
     except (KeyError, TypeError, ValueError, OSError, ImportError) as error:
         parser.error(str(error))

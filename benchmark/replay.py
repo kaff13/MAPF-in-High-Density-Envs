@@ -39,6 +39,52 @@ def write_replay(
     Invalid traces raise ``ValueError`` before an existing output is changed.
     ``makespan`` is the first solved tick, even if later frames are supplied.
     """
+    payload = {"instance": instance.to_json(), **_trace_data(
+        instance, frames, solver_name=solver_name, status=status, detail=detail,
+    )}
+    return _write_html(payload, output, "replay.html")
+
+
+def write_paired_replay(
+    instance: Instance, baseline_plan: dict, candidate_plan: dict, output: Path,
+) -> Path:
+    """Compare two traces of one scenario, with baseline left and candidate right.
+
+    The shared timeline ends at the longer trace's last tick. The player holds
+    the shorter trace's final frame and starts paused. Each side shows the
+    checked trace result separately from the recorded solver result.
+    """
+    plans = {}
+    for side, plan in (("baseline", baseline_plan), ("candidate", candidate_plan)):
+        try:
+            if not isinstance(plan, dict):
+                raise ValueError("expected a plan object")
+            if "instance_id" in plan and plan["instance_id"] != instance.id:
+                raise ValueError("plan instance_id differs from the selected instance")
+            if "instance" in plan and Instance.from_json(plan["instance"]) != instance:
+                raise ValueError("plan instance differs from the selected instance")
+            plans[side] = _trace_data(
+                instance, plan.get("frames"), solver_name=plan.get("solver", ""),
+                status=plan.get("status", ""), detail=plan.get("detail", ""),
+            )
+            plans[side]["trace_available"] = plan.get("trace_available", True)
+            if not plans[side]["trace_available"]:
+                plans[side]["status"] = "unavailable"
+                plans[side]["makespan"] = None
+            for key in ("provenance", "recorded_status", "replay_attempt"):
+                if key in plan:
+                    plans[side][key] = plan[key]
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError(f"{side}: {error}") from error
+    payload = {
+        "instance": instance.to_json(), **plans,
+        "max_tick": max(plan["last_tick"] for plan in plans.values()),
+        "autoplay": False,
+    }
+    return _write_html(payload, output, "paired_replay.html")
+
+
+def _trace_data(instance, frames, *, solver_name, status, detail):
     normalized = []
     try:
         iterator = iter(frames)
@@ -54,21 +100,24 @@ def write_replay(
     checked = check_trace(instance, normalized)
     if checked.status == "invalid":
         raise ValueError(checked.detail)
-    payload = {
-        "instance": instance.to_json(),
+    return {
         "frames": normalized,
         "solver": solver_name,
         "status": checked.status,
         "reported_status": status,
         "detail": detail or checked.detail,
         "makespan": checked.makespan,
+        "last_tick": len(normalized) - 1,
     }
+
+
+def _write_html(payload, output, template_name):
     # JSON is inside a raw-text script element: HTML escaping alone is unsafe.
     embedded = json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
     for character, escaped in (("&", "\\u0026"), ("<", "\\u003c"), (">", "\\u003e"),
                                ("\u2028", "\\u2028"), ("\u2029", "\\u2029")):
         embedded = embedded.replace(character, escaped)
-    template = Path(__file__).with_name("replay.html").read_text(encoding="utf-8")
+    template = Path(__file__).with_name(template_name).read_text(encoding="utf-8")
     document = template.replace("__REPLAY_DATA__", embedded)
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)

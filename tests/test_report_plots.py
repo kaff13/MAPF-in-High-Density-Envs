@@ -2,6 +2,7 @@
 
 import importlib.util
 from pathlib import Path
+import re
 import tempfile
 import unittest
 
@@ -15,6 +16,30 @@ def result(instance, solver, status="solved", runtime=2.0, makespan=10, density=
 
 
 class PlotStatisticsTests(unittest.TestCase):
+    def test_absolute_samples_share_the_all_solver_solved_intersection(self):
+        rows = [result("a", "base", runtime=4, makespan=20),
+                result("a", "candidate", runtime=2, makespan=10),
+                result("a", "third", runtime=3, makespan=15),
+                result("b", "base", runtime=8, makespan=30),
+                result("b", "candidate", runtime=4, makespan=25),
+                result("b", "third", "timeout"),
+                result("c", "base", "timeout"), result("c", "candidate"),
+                result("c", "third"),
+                result("d", "base", runtime=0, makespan=0),
+                result("d", "candidate", runtime=0, makespan=0),
+                result("d", "third", runtime=0, makespan=0)]
+        self.assertTrue(hasattr(plots, "absolute_values"), "absolute paired sample API is missing")
+        self.assertEqual(plots.absolute_values(rows, "runtime", "base"),
+                         {"base": [4, 0], "candidate": [2, 0], "third": [3, 0]})
+        self.assertEqual(plots.absolute_values(rows, "makespan", "base"),
+                         {"base": [20, 0], "candidate": [10, 0], "third": [15, 0]})
+
+    def test_single_solver_absolute_samples_use_its_solved_tasks(self):
+        rows = [result("a", "base", runtime=4, makespan=20),
+                result("b", "base", "timeout")]
+        self.assertTrue(hasattr(plots, "absolute_values"), "absolute paired sample API is missing")
+        self.assertEqual(plots.absolute_values(rows, "runtime", "base"), {"base": [4]})
+
     def test_relative_samples_use_common_solutions_and_positive_baseline(self):
         rows = [
             result("a", "base", runtime=4, makespan=20),
@@ -63,6 +88,10 @@ class PlotExportTests(unittest.TestCase):
         self.assertTrue(hasattr(plots, "render_plots"), "manifest-independent renderer is missing")
         rows = [result("a", "base"), result("a", "candidate", runtime=1, makespan=8),
                 result("b", "base", "timeout"), result("b", "candidate", "crash")]
+        other_map = [result("c", "base"), result("c", "candidate")]
+        for row in other_map:
+            row["map"] = "map-b"
+        rows.extend(other_map)
         with tempfile.TemporaryDirectory() as directory:
             paths = plots.render_plots(rows, "base", Path(directory))
             expected = {f"{kind}.{extension}" for kind in
@@ -74,7 +103,20 @@ class PlotExportTests(unittest.TestCase):
                 if path.suffix == ".png":
                     self.assertEqual(path.read_bytes()[:8], b"\x89PNG\r\n\x1a\n")
                 else:
-                    self.assertIn("<svg", path.read_text(encoding="utf-8"))
+                    svg = path.read_text(encoding="utf-8")
+                    self.assertIn("<svg", svg)
+                    expected_axes = 2 if path.stem == "success_heatmap" else 1
+                    self.assertEqual(len(re.findall(r'<g id="axes_\d+">', svg)), expected_axes, path.name)
+                    self.assertNotIn("map-a", svg)
+                    self.assertNotIn("map-b", svg)
+                    self.assertNotIn("Q1", svg)
+                    self.assertNotIn("Точки:", svg)
+                    self.assertNotIn("только решения", svg)
+                    if path.stem in ("runtime_box", "makespan_box"):
+                        self.assertIn("base", svg)
+                        self.assertIn("candidate", svg)
+                        self.assertIn("n=2", svg)
+                        self.assertIn("Время (с)" if path.stem == "runtime_box" else "Makespan (такты)", svg)
 
     def test_renderer_rejects_duplicate_attempts_before_writing_charts(self):
         self.assertTrue(hasattr(plots, "render_plots"), "manifest-independent renderer is missing")
@@ -98,12 +140,17 @@ class PlotExportTests(unittest.TestCase):
 
     def test_baseline_only_curves_remain_in_absolute_units(self):
         with tempfile.TemporaryDirectory() as directory:
-            plots.render_plots([result("a", "base")], "base", Path(directory), ["runtime", "makespan"])
+            plots.render_plots([result("a", "base")], "base", Path(directory),
+                               ["runtime", "makespan", "runtime_box", "makespan_box"])
             runtime_svg = (Path(directory) / "runtime.svg").read_text(encoding="utf-8")
             makespan_svg = (Path(directory) / "makespan.svg").read_text(encoding="utf-8")
-            self.assertIn("Время (с), только решения", runtime_svg)
-            self.assertIn("Makespan (такты), только решения", makespan_svg)
+            self.assertIn("Время (с)", runtime_svg)
+            self.assertIn("Makespan (такты)", makespan_svg)
             self.assertNotIn("Сокращение", runtime_svg + makespan_svg)
+            for kind in ("runtime_box", "makespan_box"):
+                svg = (Path(directory) / f"{kind}.svg").read_text(encoding="utf-8")
+                self.assertIn("base", svg)
+                self.assertIn("n=1", svg)
 
 
 if __name__ == "__main__":

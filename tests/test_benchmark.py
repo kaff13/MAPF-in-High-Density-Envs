@@ -142,7 +142,7 @@ class BenchmarkTests(unittest.TestCase):
                     capture_output=True, text=True, timeout=45,
                 )
                 self.assertEqual(plotted.returncode, 0, plotted.stderr)
-                for name in ("success", "runtime", "makespan", "budget", "paired"):
+                for name in ("success", "runtime_box", "makespan_box", "success_heatmap"):
                     path = output / "plots" / f"{name}.png"
                     self.assertEqual(path.read_bytes()[:8], b"\x89PNG\r\n\x1a\n")
                 csv_path = output / "results.csv"

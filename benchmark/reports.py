@@ -228,8 +228,6 @@ def write_reports(output, rows, baseline):
     lines = [
         "# MAPF-HD benchmark",
         "",
-        "Success requires a valid plan within the configured limit. Time and makespan medians use solved runs.",
-        "",
         "| Map | Density | Targets | Solver | Solved | Success | Median time | Median makespan | Timeout / unsolved / invalid / crash |",
         "| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |",
     ]
@@ -243,8 +241,6 @@ def write_reports(output, rows, baseline):
     if comparisons:
         lines.extend([
             "", f"## Paired comparison with {baseline}", "",
-            "Speedup above 1 favors the candidate. Negative makespan delta means a shorter plan.",
-            "",
             "| Map | Density | Targets | Candidate | Both solved / paired | Baseline only | Candidate only | Neither | Median speedup | Median makespan delta |",
             "| --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
         ])
@@ -257,8 +253,6 @@ def write_reports(output, rows, baseline):
             )
         lines.extend([
             "", "## Relative metrics", "",
-            "Positive reductions mean a smaller candidate value. Percentages are calculated per common solved scenario, then aggregated by median.",
-            "",
             "| Map | Density | Candidate | Success gain, pp | Success change, % | Time reduction, % | Makespan reduction, % | N time / makespan |",
             "| --- | ---: | --- | ---: | ---: | ---: | ---: | ---: |",
         ])
