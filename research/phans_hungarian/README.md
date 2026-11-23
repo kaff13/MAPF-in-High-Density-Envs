@@ -1,34 +1,42 @@
-# PHANS-Hungarian
-
 This research implementation explores Modification B of PHANS for multi-agent pathfinding in high-density environments (MAPF-HD). The baseline PHANS algorithm selects evacuation cells for obstructing agents sequentially using a greedy strategy. PHANS-Hungarian replaces that selection step with a global assignment computed using the Hungarian algorithm.
 
 The goal is to investigate whether jointly assigning available free cells can reduce competition between obstructing agents and improve performance in dense environments.
 
 > The Hungarian assignment optimizes destinations, but does not by itself guarantee conflict-free routes, deadlock avoidance, or a lower makespan.
 
+
+
 ## Repository Structure
+
+
 
 research/
 
 └── phans_hungarian/
 
-    ├── solver.py                    # Benchmark entry point
+&#x20;   ├── solver.py                    # Benchmark entry point
 
-    ├── team_solver.py               # Solver adapter and orchestration
+&#x20;   ├── team_solver.py               # Solver adapter and orchestration
 
-    ├── a_star.py                    # A\* pathfinding utilities
+&#x20;   ├── a_star.py                    # A* pathfinding utilities
 
-    ├── phans_hungarian.py           # Hungarian-based assignment logic
+&#x20;   ├── phans_hungarian.py           # Hungarian-based assignment logic
 
-    └── README.md                    # Method description and benchmark report
+&#x20;   └── README.md                    # Method description and benchmark report
+
+
 
 The benchmark framework and shared project components remain in their original locations and are not duplicated in this research directory.
 
+
+
 ## Method
 
-Let $B = \{b_1, \dots, b_k\}$ be the obstructing agents considered for evacuation, and let $N = \{n_1, \dots, n_p\}$ be the available free cells. The solver builds a cost matrix $C$, where $c_{ij}$ is the cost of assigning free cell $n_j$ to obstructing agent $b_i$. The Hungarian algorithm selects an assignment that minimizes the total cost, subject to each agent receiving at most one cell and each cell being assigned to at most one agent.
 
-**Cost metric used:** [Specify the metric implemented in this version, e.g. Manhattan distance or BFS path distance.]
+
+Let $B = {b_1, \dots, b_k\\}$ be the obstructing agents considered for evacuation, and let $N = {n_1, \dots, n_p\\}$ be the available free cells. The solver builds a cost matrix $C$, where $c_{ij}$ is the cost of assigning free cell $n\_j$ to obstructing agent $b\_i$. The Hungarian algorithm selects an assignment that minimizes the total cost, subject to each agent receiving at most one cell and each cell being assigned to at most one agent.
+
+Cost metric used: \[Specify the metric implemented in this version, e.g. Manhattan distance or BFS path distance.]
 
 If the implementation uses Manhattan distance, it does not account for static walls or columns. Therefore, a geometrically close cell may be difficult or impossible to reach in the actual map.
 
@@ -38,25 +46,19 @@ The benchmark entry point is solver.py. The remaining Python modules contain the
 
 To run the implementation, use the module path and entry point supported by the benchmark:
 
-`research.phans_hungarian.solver:solve`
+research.phans_hungarian.solver:solve
 
-## Experimental Results and Analysis
 
-The benchmark output below is preserved as reported. The tables are grouped by map family to make the GitHub-rendered README easier to scan. In the paired-comparison tables, speedup above `1.0x` favors the candidate; a negative makespan delta means the candidate produced a shorter plan.
-
-### Interpretation
-
-The results do not show a consistent improvement across all environments. The candidate is competitive or beneficial in selected cases, including some `toyota-env3` densities and `aisles-100x60` at 50%, but it is substantially slower or has a lower success rate in other cases. In particular, the high-density `pillars-70x42` results are weak for the candidate, and the candidate solves none of the reported 95% instances. On `toyota-env4`, success is comparable in the reported runs, while candidate computation time rises sharply at 90% and 95%.
-
-These measurements do not support a general claim that Hungarian assignment eliminates deadlocks or improves PHANS. The observed effect depends on map structure and density. Because the method optimizes destination assignment rather than the complete time-expanded movement schedule, these results should be treated as empirical findings for the tested instances, not as a guarantee.
 
 ## Results
 
-In the benchmark tables, `candidate` refers to the PHANS-Hungarian implementation under evaluation. Success requires a valid plan within the configured limit. Time and makespan medians use solved runs.
+
+
+Success requires a valid plan within the configured limit. Time and makespan medians use solved runs.
+
 
 | Map | Density | Targets | Solver | Solved | Success | Median time | Median makespan | Timeout / unsolved / invalid / crash |
 | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |
-### Aggregate and small maps
 | all | — | — | phans | 45/45 | 100.0% | 0.01145 s | 12 | 0 / 0 / 0 / 0 |
 | all | — | — | candidate | 45/45 | 100.0% | 0.01101 s | 15 | 0 / 0 / 0 / 0 |
 | toyota-env1 | 10% | 2 | phans | 5/5 | 100.0% | 0.007107 s | 11 | 0 / 0 / 0 / 0 |
@@ -79,9 +81,13 @@ In the benchmark tables, `candidate` refers to the PHANS-Hungarian implementatio
 | toyota-env1 | 90% | 2 | candidate | 5/5 | 100.0% | 0.05261 s | 25 | 0 / 0 / 0 / 0 |
 
 
+
 ## Paired comparison with phans
 
+
+
 Speedup above 1 favors the candidate. Negative makespan delta means a shorter plan.
+
 
 | Map | Density | Targets | Candidate | Both solved / paired | Baseline only | Candidate only | Neither | Median speedup | Median makespan delta |
 | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -97,7 +103,11 @@ Speedup above 1 favors the candidate. Negative makespan delta means a shorter pl
 | toyota-env1 | 90% | 2 | candidate | 5/5 | 0 | 0 | 0 | 0.8564x | 1 |
 
 
+
+
+
 Success requires a valid plan within the configured limit. Time and makespan medians use solved runs.
+
 
 | Map | Density | Targets | Solver | Solved | Success | Median time | Median makespan | Timeout / unsolved / invalid / crash |
 | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |
@@ -123,9 +133,13 @@ Success requires a valid plan within the configured limit. Time and makespan med
 | toyota-env2 | 90% | 2 | candidate | 5/5 | 100.0% | 0.05129 s | 26 | 0 / 0 / 0 / 0 |
 
 
+
 ## Paired comparison with phans
 
+
+
 Speedup above 1 favors the candidate. Negative makespan delta means a shorter plan.
+
 
 | Map | Density | Targets | Candidate | Both solved / paired | Baseline only | Candidate only | Neither | Median speedup | Median makespan delta |
 | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -141,13 +155,14 @@ Speedup above 1 favors the candidate. Negative makespan delta means a shorter pl
 | toyota-env2 | 90% | 2 | candidate | 5/5 | 0 | 0 | 0 | 1.018x | 0 |
 
 
+
 Success requires a valid plan within the configured limit. Time and makespan medians use solved runs.
+
 
 | Map | Density | Targets | Solver | Solved | Success | Median time | Median makespan | Timeout / unsolved / invalid / crash |
 | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |
 | all | — | — | phans | 45/45 | 100.0% | 3.278 s | 49 | 0 / 0 / 0 / 0 |
 | all | — | — | candidate | 45/45 | 100.0% | 1.706 s | 49 | 0 / 0 / 0 / 0 |
-### `toyota-env3`
 | toyota-env3 | 10% | 12 | phans | 5/5 | 100.0% | 0.6379 s | 47 | 0 / 0 / 0 / 0 |
 | toyota-env3 | 10% | 12 | candidate | 5/5 | 100.0% | 0.4401 s | 45 | 0 / 0 / 0 / 0 |
 | toyota-env3 | 20% | 12 | candidate | 5/5 | 100.0% | 0.8155 s | 46 | 0 / 0 / 0 / 0 |
@@ -168,15 +183,17 @@ Success requires a valid plan within the configured limit. Time and makespan med
 | toyota-env3 | 90% | 12 | candidate | 5/5 | 100.0% | 49.36 s | 80 | 0 / 0 / 0 / 0 |
 
 
+
 ## Paired comparison with phans
+
+
 
 Speedup above 1 favors the candidate. Negative makespan delta means a shorter plan.
 
+
 | Map | Density | Targets | Candidate | Both solved / paired | Baseline only | Candidate only | Neither | Median speedup | Median makespan delta |
 | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-### Aggregate and small maps
 | all | — | — | candidate | 45/45 | 0 | 0 | 0 | 1.192x | 0 |
-### `toyota-env3`
 | toyota-env3 | 10% | 12 | candidate | 5/5 | 0 | 0 | 0 | 1.128x | 0 |
 | toyota-env3 | 20% | 12 | candidate | 5/5 | 0 | 0 | 0 | 1.192x | 0 |
 | toyota-env3 | 30% | 12 | candidate | 5/5 | 0 | 0 | 0 | 1.079x | -1 |
@@ -188,13 +205,18 @@ Speedup above 1 favors the candidate. Negative makespan delta means a shorter pl
 | toyota-env3 | 90% | 12 | candidate | 5/5 | 0 | 0 | 0 | 0.2827x | 6 |
 
 
+
+
+
+
+
 Success requires a valid plan within the configured limit. Time and makespan medians use solved runs.
+
 
 | Map | Density | Targets | Solver | Solved | Success | Median time | Median makespan | Timeout / unsolved / invalid / crash |
 | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |
 | all | — | — | phans | 39/40 | 97.5% | 9.037 s | 60 | 1 / 0 / 0 / 0 |
 | all | — | — | candidate | 40/40 | 100.0% | 28.12 s | 64 | 0 / 0 / 0 / 0 |
-### `toyota-env4`
 | toyota-env4 | 50% | 12 | phans | 10/10 | 100.0% | 2.92 s | 45 | 0 / 0 / 0 / 0 |
 | toyota-env4 | 50% | 12 | candidate | 10/10 | 100.0% | 1.967 s | 44.5 | 0 / 0 / 0 / 0 |
 | toyota-env4 | 75% | 12 | phans | 9/10 | 90.0% | 24.65 s | 50 | 1 / 0 / 0 / 0 |
@@ -205,9 +227,13 @@ Success requires a valid plan within the configured limit. Time and makespan med
 | toyota-env4 | 95% | 12 | candidate | 10/10 | 100.0% | 55.86 s | 103.5 | 0 / 0 / 0 / 0 |
 
 
+
 ## Paired comparison with phans
 
+
+
 Speedup above 1 favors the candidate. Negative makespan delta means a shorter plan.
+
 
 | Map | Density | Targets | Candidate | Both solved / paired | Baseline only | Candidate only | Neither | Median speedup | Median makespan delta |
 | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -218,13 +244,16 @@ Speedup above 1 favors the candidate. Negative makespan delta means a shorter pl
 | toyota-env4 | 95% | 12 | candidate | 10/10 | 0 | 0 | 0 | 0.1446x | 0 |
 
 
+
+
+
 Success requires a valid plan within the configured limit. Time and makespan medians use solved runs.
+
 
 | Map | Density | Targets | Solver | Solved | Success | Median time | Median makespan | Timeout / unsolved / invalid / crash |
 | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |
 | all | — | — | phans | 26/30 | 86.7% | 385.8 s | 105.5 | 4 / 0 / 0 / 0 |
 | all | — | — | candidate | 13/30 | 43.3% | 106.1 s | 98 | 17 / 0 / 0 / 0 |
-### `pillars-70x42`
 | pillars-70x42 | 75% | 12 | phans | 10/10 | 100.0% | 142.3 s | 96 | 0 / 0 / 0 / 0 |
 | pillars-70x42 | 75% | 12 | candidate | 10/10 | 100.0% | 102 s | 96 | 0 / 0 / 0 / 0 |
 | pillars-70x42 | 90% | 12 | phans | 6/10 | 60.0% | 692.3 s | 101.5 | 4 / 0 / 0 / 0 |
@@ -233,9 +262,13 @@ Success requires a valid plan within the configured limit. Time and makespan med
 | pillars-70x42 | 95% | 12 | candidate | 0/10 | 0.0% | — | — | 10 / 0 / 0 / 0 |
 
 
+
 ## Paired comparison with phans
 
+
+
 Speedup above 1 favors the candidate. Negative makespan delta means a shorter plan.
+
 
 | Map | Density | Targets | Candidate | Both solved / paired | Baseline only | Candidate only | Neither | Median speedup | Median makespan delta |
 | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -245,13 +278,14 @@ Speedup above 1 favors the candidate. Negative makespan delta means a shorter pl
 | pillars-70x42 | 95% | 12 | candidate | 0/10 | 10 | 0 | 0 | — | — |
 
 
+
 Success requires a valid plan within the configured limit. Time and makespan medians use solved runs.
+
 
 | Map | Density | Targets | Solver | Solved | Success | Median time | Median makespan | Timeout / unsolved / invalid / crash |
 | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |
 | all | — | — | phans | 2/40 | 5.0% | 115.6 s | 136 | 38 / 0 / 0 / 0 |
 | all | — | — | candidate | 6/40 | 15.0% | 120.6 s | 121.5 | 34 / 0 / 0 / 0 |
-### `aisles-100x60`
 | aisles-100x60 | 50% | 12 | phans | 2/10 | 20.0% | 115.6 s | 136 | 8 / 0 / 0 / 0 |
 | aisles-100x60 | 50% | 12 | candidate | 6/10 | 60.0% | 120.6 s | 121.5 | 4 / 0 / 0 / 0 |
 | aisles-100x60 | 75% | 12 | phans | 0/10 | 0.0% | — | — | 10 / 0 / 0 / 0 |
@@ -262,9 +296,13 @@ Success requires a valid plan within the configured limit. Time and makespan med
 | aisles-100x60 | 95% | 12 | candidate | 0/10 | 0.0% | — | — | 10 / 0 / 0 / 0 |
 
 
+
 ## Paired comparison with phans
 
+
+
 Speedup above 1 favors the candidate. Negative makespan delta means a shorter plan.
+
 
 | Map | Density | Targets | Candidate | Both solved / paired | Baseline only | Candidate only | Neither | Median speedup | Median makespan delta |
 | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
