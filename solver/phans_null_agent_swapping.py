@@ -1,5 +1,4 @@
 import copy
-from collections import deque
 
 import matplotlib.animation as anm
 import matplotlib.pyplot as plt
@@ -56,34 +55,6 @@ class PHANS:
         self.null_ag_pos_lst = list(
             set(self.all_posible_pos_lst) - set(self.ag_cur_pos_lst)
         )
-        
-    def _bfs_distances(self, start_pos: tuple[int, int]) -> dict:
-        distances = {start_pos: 0}
-        queue = deque([start_pos])
-        walls = set(self.static_obss)
-
-        while queue:
-            x, y = queue.popleft()
-
-            neighbors = [
-                (x + 1, y),
-                (x - 1, y),
-                (x, y + 1),
-                (x, y - 1),
-            ]
-
-            for next_pos in neighbors:
-                nx, ny = next_pos
-
-                if not (0 <= nx < self.size_x and 0 <= ny < self.size_y):
-                    continue
-                if next_pos in walls or next_pos in distances:
-                    continue
-
-                distances[next_pos] = distances[(x, y)] + 1
-                queue.append(next_pos)
-
-        return distances
 
     def _get_closest_null_ag_pos(
         self, 
@@ -384,9 +355,7 @@ class PHANS:
             for i, bag_pos in enumerate(blocking_ag_pos_lst):
                 # Generally choose the null agent with the smallest h-value,
                 # but avoid interfering with target agents' movements.
-                
-                bfs_distances = self._bfs_distances(bag_pos)
-                
+
                 dst_from_bag_to_goal = float("inf")
                 for i_tgt_ag in range(self.task_len):
                     if bag_pos in self.tgt_ag_path_lst[i_tgt_ag]:
@@ -441,29 +410,12 @@ class PHANS:
                     dst_penalty_array = np.array(
                         [dst_penalty_dct.get(pos, 0) for pos in tmp_available_null_ags_pos_lst]
                     )
-
-                    reachable_indices = [
-                        idx
-                        for idx, pos in enumerate(tmp_available_null_ags_pos_lst)
-                        if pos in bfs_distances
-                    ]
-
-                    if not reachable_indices:
-                        break
-
-                    reachable_positions = [
-                        tmp_available_null_ags_pos_lst[idx]
-                        for idx in reachable_indices
-                    ]
-                    reachable_penalties = dst_penalty_array[reachable_indices]
-
-                    distances = np.array(
-                        [bfs_distances[pos] for pos in reachable_positions]
-                    ) + reachable_penalties
-
+                    distances = (
+                        np.abs(np.array(tmp_available_null_ags_pos_lst) - np.array(bag_pos))
+                        .sum(axis=1)
+                    ) + dst_penalty_array
                     min_index = np.argmin(distances)
-                    pos = reachable_positions[min_index]
-
+                    pos = tmp_available_null_ags_pos_lst[min_index]
                     selected_null_ags_pos_lst.append(pos)
                     available_null_ags_pos_lst.remove(pos)
                 else:
