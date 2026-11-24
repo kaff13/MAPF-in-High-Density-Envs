@@ -27,7 +27,7 @@
   .role { font-size:12px; color:#526d7b; }
   .status { margin:0; min-height:27px; padding:0 16px 9px; color:#526d7b; font-size:13px; overflow-wrap:anywhere; }
   .status.solved { color:#08604b; }
-  .stats { display:flex; flex-wrap:wrap; gap:5px 16px; padding:0 16px 12px; font-size:13px; font-variant-numeric:tabular-nums; }
+  .stats { display:flex; flex-wrap:wrap; padding:0 16px 12px; font-size:13px; font-variant-numeric:tabular-nums; }
   .map { height:clamp(250px,55vh,700px); overflow:auto; background:#e7eef2; }
   canvas { display:block; margin:auto; touch-action:pan-x pan-y; }
   .inspect { font-size:12px; color:#526d7b; margin:0; padding:8px 16px; min-height:34px; font-variant-numeric:tabular-nums; }
@@ -57,22 +57,20 @@
   <section class="viewer" aria-label="Синхронное сравнение планов">
     <div class="toolbar">
       <label for="speed">Скорость <select id="speed"><option value="0.5">0,5 такта/с</option><option value="1">1 такт/с</option><option value="2">2 такта/с</option><option value="4" selected>4 такта/с</option><option value="8">8 тактов/с</option><option value="16">16 тактов/с</option><option value="32">32 такта/с</option></select></label>
-      <label for="zoom">Масштаб <select id="zoom"><option value="1">По размеру окна</option><option value="1.5">150%</option><option value="2">200%</option><option value="3">300%</option><option value="4">400%</option></select></label>
-      <button id="fit" type="button">Вместить карты</button>
       <label><input id="show-ids" type="checkbox">Номера агентов</label>
     </div>
     <div class="panels">
       <section class="panel" aria-labelledby="baseline-name">
-        <div class="heading"><h2 id="baseline-name"></h2><span class="role">Базовый алгоритм</span></div>
+        <div class="heading"><h2 id="baseline-name">PHANS · базовый алгоритм</h2></div>
         <p id="baseline-status" class="status"></p>
-        <div class="stats"><span id="baseline-makespan"></span><span id="baseline-tick"></span><span id="baseline-goals"></span><span id="baseline-source"></span></div>
+        <div class="stats"><span id="baseline-tick"></span></div>
         <div id="baseline-view" class="map"><canvas id="baseline-canvas" role="img"></canvas></div>
         <p id="baseline-inspect" class="inspect"></p>
       </section>
       <section class="panel" aria-labelledby="candidate-name">
-        <div class="heading"><h2 id="candidate-name"></h2><span class="role">Кандидат</span></div>
+        <div class="heading"><h2 id="candidate-name">PHANS · модификация</h2></div>
         <p id="candidate-status" class="status"></p>
-        <div class="stats"><span id="candidate-makespan"></span><span id="candidate-tick"></span><span id="candidate-goals"></span><span id="candidate-source"></span></div>
+        <div class="stats"><span id="candidate-tick"></span></div>
         <div id="candidate-view" class="map"><canvas id="candidate-canvas" role="img"></canvas></div>
         <p id="candidate-inspect" class="inspect"></p>
       </section>
@@ -98,25 +96,20 @@
   const $ = id => document.getElementById(id);
   const data = JSON.parse($("replay-data").textContent);
   const instance = data.instance, grid = instance.map, maxTick = data.max_tick;
+  $("baseline-name").textContent = data.baseline_name;
+  $("candidate-name").textContent = data.candidate_name;
   const colors = ["#c54c39", "#147fa1", "#7257b6", "#b07908", "#27845b", "#bd4c88", "#4878c7", "#835b3c", "#588326", "#8e518d", "#a45d11", "#217c79"];
   const color = i => i < colors.length ? colors[i] : `hsl(${(i * 137.508) % 360} 55% 40%)`;
-  const statusNames = {solved:"решено", unsolved:"не решено", timeout:"лимит времени", invalid:"недопустимый план", crash:"ошибка решателя", error:"ошибка"};
+  const statusNames = {solved:"Решено", unsolved:"Не решено", timeout:"Таймаут", invalid:"Недопустимый план", crash:"Ошибка", error:"Ошибка"};
   const margin = 30, targetButtons = [];
   let tick = 0, cell = 16, width = 0, height = 0, selected = null;
   let playing = false, animation = null, previousTime = null, accumulated = 0;
   const sides = ["baseline", "candidate"].map(key => {
     const canvas = $(`${key}-canvas`), backdrop = document.createElement("canvas"), plan = data[key];
-    $(`${key}-name`).textContent = plan.solver || (key === "baseline" ? "PHANS" : "Кандидат");
-    $(`${key}-makespan`).textContent = `Makespan: ${plan.makespan === null ? "—" : plan.makespan}`;
-    const sources = {"fingerprinted archive":"проверенный архив", "pinned PHANS":"закреплённый PHANS", "current Python adapter":"текущая реализация"};
-    $(`${key}-source`).textContent = `Источник: ${sources[plan.provenance] || "сохранённая трасса"}`;
     const status = $(`${key}-status`);
     status.className = `status ${plan.status}`;
-    const labels = [plan.trace_available === false ? "Трасса отсутствует" : `План: ${statusNames[plan.status] || plan.status}`];
-    if (plan.replay_attempt) labels.push(`Новая попытка: ${statusNames[plan.reported_status] || plan.reported_status || "нет данных"}`);
-    else if (plan.reported_status && (plan.reported_status !== plan.status || plan.trace_available === false)) labels.push(`Результат решателя: ${statusNames[plan.reported_status] || plan.reported_status}`);
-    if (plan.recorded_status) labels.push(`Исходный замер: ${statusNames[plan.recorded_status] || plan.recorded_status}`);
-    status.textContent = `${labels.join(". ")}.`;
+    status.textContent = plan.trace_available === false
+      ? "Трасса отсутствует" : statusNames[plan.status] || "Нет данных";
     status.title = plan.detail || "";
     return {key, plan, canvas, context:canvas.getContext("2d"), view:$(`${key}-view`), backdrop, background:backdrop.getContext("2d"), hover:null};
   });
@@ -130,7 +123,7 @@
     const availableWidth = Math.min(...sides.map(side => side.view.clientWidth));
     const availableHeight = Math.min(...sides.map(side => side.view.clientHeight));
     const base = Math.max(4, Math.min(40, Math.floor(Math.min((availableWidth - margin * 2) / grid.width, (availableHeight - margin * 2) / grid.height))));
-    cell = base * Number($("zoom").value);
+    cell = base;
     width = margin * 2 + cell * grid.width; height = margin * 2 + cell * grid.height;
     const scale = Math.min(window.devicePixelRatio || 1, 2);
     sides.forEach(side => {
@@ -178,9 +171,7 @@
       const [x,y] = frame[selected]; context.strokeStyle = "#17394a"; context.lineWidth = 2;
       context.beginPath(); context.arc(margin + (x + .5) * cell, margin + (y + .5) * cell, cell * .47, 0, Math.PI * 2); context.stroke();
     }
-    const reached = grid.goals.filter(([x,y], i) => frame[i][0] === x && frame[i][1] === y).length;
-    $(`${key}-tick`).textContent = `Такт ${currentTick} / ${side.plan.last_tick}`;
-    $(`${key}-goals`).textContent = `У целей: ${reached} / ${grid.goals.length}`;
+    $(`${key}-tick`).textContent = `Такт: ${currentTick} / ${side.plan.last_tick}`;
     $(`${key}-tick`).title = tick > side.plan.last_tick ? "Показано последнее сохранённое состояние" : "";
     canvas.setAttribute("aria-label", side.plan.trace_available === false
       ? `${side.plan.solver}: начальное состояние, трасса отсутствует`
@@ -195,7 +186,7 @@
 
   function draw() {
     sides.forEach(drawSide);
-    $("tick").textContent = `Такт ${tick} / ${maxTick}`;
+    $("tick").textContent = `Такт: ${tick} / ${maxTick}`;
     $("timeline").value = tick;
     $("back").disabled = tick === 0; $("forward").disabled = tick === maxTick; $("play").disabled = maxTick === 0;
     targetButtons.forEach((button, i) => button.setAttribute("aria-pressed", String(selected === i)));
@@ -257,8 +248,6 @@
   $("forward").addEventListener("click", () => seek(tick + 1));
   $("timeline").addEventListener("input", event => seek(event.target.value));
   $("show-ids").addEventListener("change", draw);
-  $("zoom").addEventListener("change", layout);
-  $("fit").addEventListener("click", () => { $("zoom").value = "1"; layout(); sides.forEach(side => side.view.scrollTo(0, 0)); });
   $("speed").addEventListener("change", () => { accumulated = 0; previousTime = null; });
   document.addEventListener("keydown", event => {
     if (["INPUT", "SELECT", "BUTTON", "TEXTAREA"].includes(event.target.tagName) || event.altKey || event.ctrlKey || event.metaKey) return;

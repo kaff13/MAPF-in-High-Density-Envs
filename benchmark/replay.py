@@ -47,6 +47,7 @@ def write_replay(
 
 def write_paired_replay(
     instance: Instance, baseline_plan: dict, candidate_plan: dict, output: Path,
+    *, baseline_name="PHANS", candidate_name=None,
 ) -> Path:
     """Compare two traces of one scenario, with baseline left and candidate right.
 
@@ -79,6 +80,8 @@ def write_paired_replay(
     payload = {
         "instance": instance.to_json(), **plans,
         "max_tick": max(plan["last_tick"] for plan in plans.values()),
+        "baseline_name": baseline_name,
+        "candidate_name": candidate_name or plans["candidate"]["solver"],
         "autoplay": False,
     }
     return _write_html(payload, output, "paired_replay.html")

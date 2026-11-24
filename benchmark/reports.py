@@ -52,10 +52,12 @@ def read_results(path):
     return rows
 
 
-def validate_results(rows, manifest):
+def validate_results(rows, manifest, *, require_complete=True):
     expected = {(case, solver) for case in manifest["instance_ids"] for solver in manifest["solvers"]}
     actual = {(row["instance_id"], row["solver"]) for row in rows}
-    if actual != expected or len(rows) != len(expected):
+    if ((require_complete and actual != expected)
+            or (not require_complete and not actual <= expected)
+            or len(rows) != len(actual)):
         raise ValueError("run is incomplete or its results differ from the manifest")
     groups = {}
     for row in rows:

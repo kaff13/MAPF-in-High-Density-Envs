@@ -13,16 +13,19 @@ PLOT_NAMES = (
     "success", "runtime", "makespan", "budget", "paired", "runtime_box",
     "makespan_box", "success_box", "success_heatmap",
 )
-REPORT_PLOT_NAMES = ("runtime_box", "makespan_box", "success", "success_heatmap")
+REPORT_PLOT_NAMES = ("runtime_box", "makespan_box", "success_heatmap")
 METRIC_LABELS = {
     "success": "Решённые задачи (%)",
-    "runtime": "Время (с)",
-    "makespan": "Makespan (такты)",
+    "runtime": "Время решения (с)",
+    "makespan": "Длина плана (такты)",
 }
 
 
 def solver_color(solver):
     """Keep colors stable across figures, runs, and filter selections."""
+    fixed = {"phans": "#2563eb", "phans_bfs": "#ea580c"}
+    if solver.casefold() in fixed:
+        return fixed[solver.casefold()]
     palette = ("#2563eb", "#ea580c", "#059669", "#7c3aed", "#dc2626",
                "#0891b2", "#a16207", "#db2777", "#4d7c0f", "#475569")
     index = int.from_bytes(sha256(solver.encode("utf-8")).digest()[:4], "big") % len(palette)
@@ -118,7 +121,8 @@ def density_plot(axis, rows, kind, baseline=None):
             axis.fill_between(densities, lower, upper, color=color, alpha=0.13)
         for density, value, count in zip(densities, centers, counts):
             if isfinite(value):
-                axis.annotate(f"n={count}", (density, value), xytext=(3, 6),
+                label = f"Попыток: {count}" if kind == "success" else f"Общих решений: {count}"
+                axis.annotate(label, (density, value), xytext=(3, 6),
                               textcoords="offset points", fontsize=7, color=color)
     if kind == "success":
         axis.set_ylim(-3, 110)
@@ -137,14 +141,15 @@ def budget_plot(axis, rows):
                        if row["status"] == "solved" and row["computation_time_s"] <= limit)
         points = [0, *sorted(set(times)), limit]
         fractions = [100 * sum(time <= point for time in times) / len(cases) for point in points]
-        axis.step(points, fractions, where="post", label=f"{solver} (N={len(cases)})", color=solver_color(solver))
+        axis.step(points, fractions, where="post", label=f"{solver} (попыток: {len(cases)})", color=solver_color(solver))
     axis.set_xlim(0, limit)
     axis.set_ylim(-2, 104)
     axis.set_xlabel("Бюджет времени (с)")
     axis.set_ylabel("Решённые задачи (%)")
 
 
-def paired_plot(axis, rows, baseline):
+def paired_plot(axis, rows, baseline, solver_labels=None):
+    solver_labels = solver_labels or {}
     has_points = False
     for candidate, pairs in sorted(solver_pairs(rows, baseline)):
         measurements = []
@@ -158,18 +163,22 @@ def paired_plot(axis, rows, baseline):
             has_points = True
             speedups, deltas = zip(*measurements)
             axis.scatter(speedups, deltas, alpha=0.65, s=25, edgecolors="white", linewidths=0.3,
-                         label=f"{candidate} (n={len(measurements)})", color=solver_color(candidate))
+                         label=f"{solver_labels.get(candidate, candidate)} (парных сценариев: {len(measurements)})", color=solver_color(candidate))
     axis.axvline(1, color="0.5", linestyle="--", linewidth=1)
     axis.axhline(0, color="0.5", linestyle="--", linewidth=1)
     axis.set_xscale("log")
-    axis.set_xlabel(f"Ускорение относительно {baseline} (×)")
-    axis.set_ylabel("Δ makespan (такты)")
+    low, high = axis.get_xlim()
+    ticks = [float(value) for value in axis.get_xticks() if low <= value <= high]
+    axis.set_xticks(ticks, labels=[f"{value:.6g}" for value in ticks])
+    axis.set_xlabel("Ускорение относительно PHANS (×)")
+    axis.set_ylabel("Изменение длины плана (такты)")
     if not has_points:
         _empty(axis, "Нет общих решений с положительным временем")
 
 
-def _box_plot(axis, observations, ylabel, success=False):
+def _box_plot(axis, observations, ylabel, success=False, solver_labels=None):
     """Q1–Q3 boxes, medians, 1.5-IQR whiskers, and every observation."""
+    solver_labels = solver_labels or {}
     solvers = list(observations)
     any_values = False
     for index, solver in enumerate(solvers, 1):
@@ -186,7 +195,8 @@ def _box_plot(axis, observations, ylabel, success=False):
         offsets = [0] if len(values) == 1 else [0.18 * ((i * 0.61803398875) % 1 - 0.5) for i in range(len(values))]
         axis.scatter([index + offset for offset in offsets], values,
                      color=color, s=17, alpha=0.48, edgecolors="white", linewidths=0.3, zorder=3)
-    axis.set_xticks(range(1, len(solvers) + 1), [f"{solver}\nn={len(observations[solver])}" for solver in solvers])
+    quantity = "Попыток" if success else "Общих решений"
+    axis.set_xticks(range(1, len(solvers) + 1), [f"{solver_labels.get(solver, solver)}\n{quantity}: {len(observations[solver])}" for solver in solvers])
     if len(solvers) > 4:
         axis.tick_params(axis="x", labelsize=8)
         for label in axis.get_xticklabels():
@@ -204,18 +214,29 @@ def _box_plot(axis, observations, ylabel, success=False):
         _empty(axis)
 
 
-def _success_heatmap(figure, axis, rows):
+def _success_heatmap(figure, axis, rows, solver_labels=None):
     import numpy as np
 
+    solver_labels = solver_labels or {}
     solvers = sorted(by_solver(rows))
-    densities = sorted({row["density_pct"] for row in rows})
+    def map_sort_key(map_id):
+        import re
+        match = re.fullmatch(r"toyota-env([1-4])", map_id)
+        if match:
+            return (0, int(match.group(1)), map_id)
+        if map_id == "pillars-70x42":
+            return (1, 0, map_id)
+        return (2, 0, map_id)
+
+    groups = sorted({(row["map"], row["density_pct"]) for row in rows},
+                    key=lambda item: (map_sort_key(item[0]), item[1]))
     cells = defaultdict(list)
     for row in rows:
-        cells[(row["density_pct"], row["solver"])].append(row)
-    rates = np.full((len(densities), len(solvers)), np.nan)
-    for y, density in enumerate(densities):
+        cells[(row["map"], row["density_pct"], row["solver"])].append(row)
+    rates = np.full((len(groups), len(solvers)), np.nan)
+    for y, (map_id, density) in enumerate(groups):
         for x, solver in enumerate(solvers):
-            cases = cells[(density, solver)]
+            cases = cells[(map_id, density, solver)]
             if not cases:
                 axis.text(x, y, "—", ha="center", va="center", color="0.5", fontsize=8)
                 continue
@@ -225,10 +246,17 @@ def _success_heatmap(figure, axis, rows):
             axis.text(x, y, f"{value:.0f}%\n{solved}/{len(cases)}", ha="center", va="center",
                       color="white" if value >= 65 else "#111827", fontsize=8)
     heatmap = axis.imshow(np.ma.masked_invalid(rates), cmap="YlGnBu", vmin=0, vmax=100, aspect="auto")
-    axis.set_xticks(range(len(solvers)), solvers)
-    axis.set_yticks(range(len(densities)), [str(density) for density in densities])
+    axis.set_xticks(range(len(solvers)), [solver_labels.get(solver, solver) for solver in solvers])
+    def display_map(map_id):
+        import re
+        match = re.fullmatch(r"toyota-env([1-4])", map_id)
+        if match:
+            return f"Toyota env{match.group(1)}"
+        return "Pillars 70×42" if map_id == "pillars-70x42" else map_id
+
+    axis.set_yticks(range(len(groups)), [f"{display_map(map_id)} · {density}%" for map_id, density in groups])
     axis.set_xlabel("Алгоритм")
-    axis.set_ylabel("Плотность размещения (%)")
+    axis.set_ylabel("Карта · плотность")
     axis.grid(False)
     figure.colorbar(heatmap, ax=axis, label="Решённые задачи (%)", shrink=0.8)
 
@@ -258,7 +286,7 @@ def _validate_rows(rows):
                 raise ValueError(f"solved runtime exceeds its timeout: {key}")
 
 
-def render_plots(rows, baseline, output_dir, kinds=None):
+def render_plots(rows, baseline, output_dir, kinds=None, *, solver_labels=None):
     """Save PNG and SVG charts without needing a manifest; return paths.
 
     Each figure has one plot pooling maps. Raw time/makespan samples use the
@@ -266,6 +294,7 @@ def render_plots(rows, baseline, output_dir, kinds=None):
     are scenario-group rates. Invalid observations fail before writing files.
     """
     rows = list(rows)
+    solver_labels = solver_labels or {}
     _validate_rows(rows)
     kinds = list(PLOT_NAMES if kinds is None else ([kinds] if isinstance(kinds, str) else kinds))
     if not kinds or any(kind not in PLOT_NAMES for kind in kinds):
@@ -285,31 +314,32 @@ def render_plots(rows, baseline, output_dir, kinds=None):
         for kind in kinds:
             size = (max(8, 1.4 * len(by_solver(rows))), 4.8)
             if kind == "success_heatmap":
-                size = (max(8, 2 * len(by_solver(rows)) + 2), max(3.8, 0.7 * len({row["density_pct"] for row in rows}) + 1.5))
+                groups = {(row["map"], row["density_pct"]) for row in rows}
+                size = (max(8, 2 * len(by_solver(rows)) + 2), max(3.8, 0.42 * len(groups) + 1.5))
             figure, axis = plt.subplots(figsize=size, layout="constrained")
             try:
                 if kind == "budget":
                     budget_plot(axis, rows)
                     title = "Бюджет времени"
                 elif kind == "paired":
-                    paired_plot(axis, rows, baseline)
-                    title = "Время и makespan"
+                    paired_plot(axis, rows, baseline, solver_labels)
+                    title = "Время и длина плана"
                 elif kind in ("runtime_box", "makespan_box"):
                     metric = kind.removesuffix("_box")
-                    _box_plot(axis, absolute_values(rows, metric, baseline), METRIC_LABELS[metric])
-                    title = "Время решения" if metric == "runtime" else "Makespan"
+                    _box_plot(axis, absolute_values(rows, metric, baseline), METRIC_LABELS[metric], solver_labels=solver_labels)
+                    title = "Время решения" if metric == "runtime" else "Длина плана"
                 elif kind == "success_box":
                     observations = success_values(rows)
                     observations = {solver: observations[solver] for solver in
                                     sorted(observations, key=lambda solver: (solver != baseline, solver))}
-                    _box_plot(axis, observations, "Доля решений (%)", success=True)
+                    _box_plot(axis, observations, "Доля решений (%)", success=True, solver_labels=solver_labels)
                     title = "Доля решений"
                 elif kind == "success_heatmap":
-                    _success_heatmap(figure, axis, rows)
+                    _success_heatmap(figure, axis, rows, solver_labels)
                     title = "Доля решений"
                 else:
                     density_plot(axis, rows, kind, baseline)
-                    title = {"success": "Доля решений", "runtime": "Время решения", "makespan": "Makespan"}[kind]
+                    title = {"success": "Доля решений", "runtime": "Время решения", "makespan": "Длина плана"}[kind]
                 axis.set_title(title, fontsize=14, pad=12)
                 if kind != "success_heatmap":
                     axis.grid(axis="y", alpha=0.2)
