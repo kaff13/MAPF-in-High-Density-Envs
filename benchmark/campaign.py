@@ -6,6 +6,7 @@ Use --report-only to rebuild HTML without rerunning any measurements.
 """
 import argparse
 import csv
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from html import escape
@@ -41,9 +42,10 @@ VARIANTS = (
 class Settings:
     maps: tuple = tuple(MAPS)
     densities: tuple = (50, 75, 90, 95)
-    seeds: int = 2
+    seeds: int = 10
     seed_start: int = 100
     ideas: tuple = IDEAS
+    workers: int = 4
 
     def __post_init__(self):
         if (not self.maps or len(set(self.maps)) != len(self.maps)
@@ -53,7 +55,8 @@ class Settings:
                 or type(self.seeds) is not int or self.seeds < 1
                 or type(self.seed_start) is not int or self.seed_start < 0
                 or not self.ideas or len(set(self.ideas)) != len(self.ideas)
-                or any(name not in IDEAS for name in self.ideas)):
+                or any(name not in IDEAS for name in self.ideas)
+                or type(self.workers) is not int or not 1 <= self.workers <= 64):
             raise ValueError("invalid campaign profile")
 
     @property
@@ -205,6 +208,17 @@ def attempt_row(root, solver, case, attempt):
     }
 
 
+def measure_attempt(run_fn, output, solver, case):
+    """Run one isolated solver attempt; the coordinator persists its result."""
+    log = output / "logs" / solver.name / (case.id + ".log")
+    plan = output / "plans" / solver.name / (case.id + ".json.gz")
+    log.parent.mkdir(parents=True, exist_ok=True)
+    plan.parent.mkdir(parents=True, exist_ok=True)
+    attempt = run_fn(solver, case, TIMEOUT_S, output / "baseline", log, plan,
+                     source_root=output / "sources")
+    return solver, case, attempt
+
+
 def export_reports(root, manifest, replay_mode="sample", force=False):
     """Publish native pair reports only after all measurements are durable."""
     from .artifacts import build_report
@@ -275,38 +289,56 @@ def run_campaign(output, settings, *, report=True, report_only=False,
         added = 0
         if not report_only:
             solvers = campaign_solvers(settings.ideas)
+            jobs = []
+            for index, case in enumerate(instances(settings)):
+                offset = index % len(solvers)
+                for solver in solvers[offset:] + solvers[:offset]:
+                    if (case.id, solver.name) not in completed:
+                        jobs.append((solver, case))
+            if max_attempts is not None:
+                jobs = jobs[:max_attempts]
             with (output / "results.csv").open("a", newline="", encoding="utf-8") as stream:
                 writer = csv.DictWriter(stream, fieldnames=RESULT_FIELDS)
-                for index, case in enumerate(instances(settings)):
-                    offset = index % len(solvers)
-                    for solver in solvers[offset:] + solvers[:offset]:
-                        key = case.id, solver.name
-                        if key in completed:
-                            continue
-                        if max_attempts is not None and added >= max_attempts:
-                            break
-                        log = output / "logs" / solver.name / (case.id + ".log")
-                        plan = output / "plans" / solver.name / (case.id + ".json.gz")
-                        log.parent.mkdir(parents=True, exist_ok=True)
-                        plan.parent.mkdir(parents=True, exist_ok=True)
-                        attempt = run_fn(solver, case, TIMEOUT_S, output / "baseline", log, plan,
-                                         source_root=output / "sources")
-                        row = attempt_row(output, solver, case, attempt)
-                        validate_results([row], {"instance_ids": [case.id], "solvers": {solver.name: None}})
-                        if row["solver_source_sha256"] != fingerprints[solver.name]:
-                            raise ValueError("executed solver fingerprint differs from frozen source")
-                        if row["status"] == "solved" and not row["plan_path"]:
-                            raise ValueError("solved attempt did not save its trace")
-                        save_checkpoint(output, row, manifest["configuration_digest"], cases[case.id])
-                        writer.writerow(row)
-                        stream.flush()
-                        completed[key] = row
-                        added += 1
-                        print(f'{len(completed)}/{expected} {case.id} {solver.name}: {row["status"]}', flush=True)
-                        if row["status"] in ("invalid", "crash"):
-                            raise RuntimeError(f'{solver.name}: {row["status"]}; inspect {log}')
-                    if max_attempts is not None and added >= max_attempts:
-                        break
+                with ThreadPoolExecutor(max_workers=settings.workers,
+                                        thread_name_prefix="phans-attempt") as pool:
+                    remaining = iter(jobs)
+                    pending = {}
+
+                    def submit_one():
+                        try:
+                            solver, case = next(remaining)
+                        except StopIteration:
+                            return False
+                        future = pool.submit(measure_attempt, run_fn, output, solver, case)
+                        pending[future] = solver, case
+                        return True
+
+                    for _ in range(min(settings.workers, len(jobs))):
+                        submit_one()
+                    while pending:
+                        done, _ = wait(tuple(pending), return_when=FIRST_COMPLETED)
+                        for future in done:
+                            solver, case = pending.pop(future)
+                            _, _, attempt = future.result()
+                            key = case.id, solver.name
+                            row = attempt_row(output, solver, case, attempt)
+                            validate_results([row], {"instance_ids": [case.id], "solvers": {solver.name: None}})
+                            if row["solver_source_sha256"] != fingerprints[solver.name]:
+                                raise ValueError("executed solver fingerprint differs from frozen source")
+                            if row["status"] == "solved" and not row["plan_path"]:
+                                raise ValueError("solved attempt did not save its trace")
+                            save_checkpoint(output, row, manifest["configuration_digest"], cases[case.id])
+                            writer.writerow(row)
+                            stream.flush()
+                            completed[key] = row
+                            added += 1
+                            print(f'{len(completed)}/{expected} {case.id} {solver.name}: {row["status"]}', flush=True)
+                            if row["status"] in ("invalid", "crash"):
+                                for queued in pending:
+                                    queued.cancel()
+                                log = output / "logs" / solver.name / (case.id + ".log")
+                                raise RuntimeError(f'{solver.name}: {row["status"]}; inspect {log}')
+                            submit_one()
         complete = len(completed) == expected
         reports = []
         if complete:
@@ -321,11 +353,12 @@ def run_campaign(output, settings, *, report=True, report_only=False,
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", type=Path, default=Path("benchmark-results/phans-15s-2h"))
+    parser.add_argument("--out", type=Path, default=Path("benchmark-results/phans-15s-10x4"))
     parser.add_argument("--maps", nargs="+", choices=tuple(MAPS))
     parser.add_argument("--density", nargs="+", type=int)
-    parser.add_argument("--seeds", type=int, help="independent seeds per map/density; default 2")
+    parser.add_argument("--seeds", type=int, help="independent seeds per map/density; default 10")
     parser.add_argument("--seed-start", type=int, help="first fresh seed; default 100")
+    parser.add_argument("--workers", type=int, help="parallel isolated attempts; default 4")
     parser.add_argument("--ideas", nargs="+", choices=IDEAS)
     parser.add_argument("--plan", action="store_true", help="print workload without executing or writing")
     parser.add_argument("--report-only", action="store_true", help="rebuild reports; never rerun solvers")
@@ -344,10 +377,13 @@ def main():
             seeds=defaults["seeds"] if args.seeds is None else args.seeds,
             seed_start=defaults["seed_start"] if args.seed_start is None else args.seed_start,
             ideas=tuple(args.ideas or defaults["ideas"]),
+            workers=defaults["workers"] if args.workers is None else args.workers,
         )
         total = settings.scenario_count * len(campaign_solvers(settings.ideas))
         print(f'{settings.scenario_count} scenarios; {total} attempts; 15 s each; '
-              f'{total * TIMEOUT_S / 3600:.1f} h maximum planning budget (excluding setup/reporting).', flush=True)
+              f'{settings.workers} workers; {total * TIMEOUT_S / 3600:.1f} CPU-hours maximum; '
+              f'{total * TIMEOUT_S / settings.workers / 60:.0f} min idealized planning wall time '
+              '(excluding setup/validation/reporting).', flush=True)
         if args.plan:
             print(json.dumps(asdict(settings), ensure_ascii=False, indent=2))
             return 0

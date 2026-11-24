@@ -3,6 +3,8 @@ from hashlib import sha256
 import json
 from pathlib import Path
 import tempfile
+import threading
+import time
 import unittest
 from unittest.mock import patch
 
@@ -40,7 +42,7 @@ class CampaignTests(unittest.TestCase):
 
     def settings(self):
         return Settings(maps=("toyota-env1",), densities=(50,),
-                        seeds=1, seed_start=100, ideas=("engineering",))
+                        seeds=1, seed_start=100, ideas=("engineering",), workers=1)
 
     def fake_attempt(self, calls):
         def run(solver, instance, timeout_s, baseline_root, log_path,
@@ -54,16 +56,41 @@ class CampaignTests(unittest.TestCase):
             return Attempt("unsolved", 0.01, source_sha256=fingerprint)
         return run
 
-    def test_default_grid_reserves_overhead_within_two_hours(self):
+    def test_default_grid_uses_ten_samples_and_four_workers(self):
         settings = Settings()
-        self.assertEqual((len(settings.maps), settings.densities, settings.seeds, settings.seed_start),
-                         (6, (50, 75, 90, 95), 2, 100))
-        self.assertEqual(settings.scenario_count, 48)
+        self.assertEqual((len(settings.maps), settings.densities, settings.seeds,
+                          settings.seed_start, settings.workers),
+                         (6, (50, 75, 90, 95), 10, 100, 4))
+        self.assertEqual(settings.scenario_count, 240)
         self.assertEqual(len(campaign_solvers(settings.ideas)), 7)
         attempts = settings.scenario_count * len(campaign_solvers(settings.ideas))
-        self.assertEqual(attempts, 336)
-        self.assertEqual(attempts * TIMEOUT_S, 84 * 60)
-        self.assertGreaterEqual(2 * 3600 - attempts * TIMEOUT_S, 36 * 60)
+        self.assertEqual(attempts, 1680)
+        self.assertEqual(attempts * TIMEOUT_S / settings.workers, 105 * 60)
+
+    def test_workers_run_attempts_concurrently_but_checkpoint_every_result(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "run"
+            settings = Settings(maps=("toyota-env1",), densities=(50,), seeds=2,
+                                seed_start=100, ideas=("engineering",), workers=2)
+            guard = threading.Lock()
+            active = 0
+            peak = 0
+
+            def concurrent_attempt(*args, **kwargs):
+                nonlocal active, peak
+                with guard:
+                    active += 1
+                    peak = max(peak, active)
+                time.sleep(0.05)
+                with guard:
+                    active -= 1
+                return self.fake_attempt([])(*args, **kwargs)
+
+            result = run_campaign(root, settings, report=False, run_fn=concurrent_attempt)
+            self.assertTrue(result["complete"])
+            self.assertEqual(result["attempts"], 4)
+            self.assertEqual(peak, 2)
+            self.assertEqual(len(list((root / "checkpoints").glob("*/*.json"))), 4)
 
     def test_sampling_has_balanced_cells_and_distinct_seeds(self):
         settings = Settings(maps=("toyota-env1", "toyota-env2"), densities=(90, 95), seeds=2)
