@@ -41,7 +41,7 @@ VARIANTS = (
 class Settings:
     maps: tuple = tuple(MAPS)
     densities: tuple = (50, 75, 90, 95)
-    seeds: int = 100
+    seeds: int = 2
     seed_start: int = 100
     ideas: tuple = IDEAS
 
@@ -321,10 +321,10 @@ def run_campaign(output, settings, *, report=True, report_only=False,
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out", type=Path, default=Path("benchmark-results/phans-15s"))
+    parser.add_argument("--out", type=Path, default=Path("benchmark-results/phans-15s-2h"))
     parser.add_argument("--maps", nargs="+", choices=tuple(MAPS))
     parser.add_argument("--density", nargs="+", type=int)
-    parser.add_argument("--seeds", type=int, help="independent seeds per map/density; default 100")
+    parser.add_argument("--seeds", type=int, help="independent seeds per map/density; default 2")
     parser.add_argument("--seed-start", type=int, help="first fresh seed; default 100")
     parser.add_argument("--ideas", nargs="+", choices=IDEAS)
     parser.add_argument("--plan", action="store_true", help="print workload without executing or writing")

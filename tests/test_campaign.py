@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from benchmark.campaign import Settings, campaign_solvers, instances, run_campaign
+from benchmark.campaign import TIMEOUT_S, Settings, campaign_solvers, instances, run_campaign
 from benchmark.checkpoints import CampaignLock, atomic_json
 from benchmark.runner import Attempt
 
@@ -54,12 +54,16 @@ class CampaignTests(unittest.TestCase):
             return Attempt("unsolved", 0.01, source_sha256=fingerprint)
         return run
 
-    def test_default_grid_has_100_fresh_samples_in_every_cell(self):
+    def test_default_grid_reserves_overhead_within_two_hours(self):
         settings = Settings()
         self.assertEqual((len(settings.maps), settings.densities, settings.seeds, settings.seed_start),
-                         (6, (50, 75, 90, 95), 100, 100))
-        self.assertEqual(settings.scenario_count, 2400)
+                         (6, (50, 75, 90, 95), 2, 100))
+        self.assertEqual(settings.scenario_count, 48)
         self.assertEqual(len(campaign_solvers(settings.ideas)), 7)
+        attempts = settings.scenario_count * len(campaign_solvers(settings.ideas))
+        self.assertEqual(attempts, 336)
+        self.assertEqual(attempts * TIMEOUT_S, 84 * 60)
+        self.assertGreaterEqual(2 * 3600 - attempts * TIMEOUT_S, 36 * 60)
 
     def test_sampling_has_balanced_cells_and_distinct_seeds(self):
         settings = Settings(maps=("toyota-env1", "toyota-env2"), densities=(90, 95), seeds=2)
