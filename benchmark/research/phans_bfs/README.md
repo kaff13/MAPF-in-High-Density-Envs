@@ -13,3 +13,7 @@ The benchmark can load this solver as:
 ## Results
 
 Benchmark results will be added here after the runs are complete.
+
+## Отчёт бенчмарка
+
+[Отчёт PHANS-BFS](report/report-bfs.html). Откройте HTML в браузере из локальной копии репозитория.

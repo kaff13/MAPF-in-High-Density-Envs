@@ -1,0 +1,6 @@
+map,density_pct,targets,solver,baseline,paired,both_solved,baseline_only,candidate_only,neither_solved,median_speedup,median_makespan_delta,shorter,equal,longer,success_rate_gain_pp,success_rate_change_pct,median_time_reduction_pct,median_makespan_reduction_pct,time_pairs,makespan_pairs
+all,,,phans_bfs,phans,40,34,3,0,3,0.8612127964817733,0.0,10,13,11,-7.5,-8.108108108108109,-16.115636525035526,0.0,34,34
+pillars-70x42,50,12,phans_bfs,phans,10,10,0,0,0,0.8308704873965638,0.0,0,9,1,0.0,0.0,-20.37080154338151,0.0,10,10
+pillars-70x42,75,12,phans_bfs,phans,10,9,1,0,0,0.867491745515797,0,2,3,4,-10.0,-10.0,-15.274872086006495,0.0,9,9
+pillars-70x42,90,12,phans_bfs,phans,10,5,2,0,3,0.9547270130744432,-1,4,0,1,-20.0,-28.571428571428573,-4.741982399740347,1.0,5,5
+pillars-70x42,95,12,phans_bfs,phans,10,10,0,0,0,0.8797618932321454,0.5,4,1,5,0.0,0.0,-13.892211179409479,-0.3968253968253968,10,10
