@@ -1,0 +1,11 @@
+map,density_pct,targets,solver,solved,total,success_rate,median_time_s,median_makespan,timeouts,unsolved,invalid,crashes,success_rate_gain_pp,success_rate_change_pct,median_time_reduction_pct,median_makespan_reduction_pct,both_solved,time_pairs,makespan_pairs,candidate_only,baseline_only
+all,,,detour,19,40,0.475,6.225599299999885,54,21,0,0,0,7.5,18.75,44.72527514383714,2.380952380952381,13,13,13,6,3
+all,,,phans,16,40,0.4,10.91035320001538,58.0,24,0,0,0,,,,,,,,,
+toyota-env4,50,12,detour,10,10,1.0,2.0555134000023827,45.0,0,0,0,0,20.0,25.0,52.27931076006254,2.2774327122153206,8,8,8,2,0
+toyota-env4,50,12,phans,8,10,0.8,6.4757814000186045,44.0,2,0,0,0,,,,,,,,,
+toyota-env4,75,12,phans,0,10,0.0,,,10,0,0,0,,,,,,,,,
+toyota-env4,75,12,detour,1,10,0.1,14.55177260003984,45,9,0,0,0,10.0,,,,0,0,0,1,0
+toyota-env4,90,12,phans,1,10,0.1,12.524498700047843,60,9,0,0,0,,,,,,,,,
+toyota-env4,90,12,detour,2,10,0.2,13.042838449997362,73.0,8,0,0,0,10.0,100.0,,,0,0,0,2,1
+toyota-env4,95,12,detour,6,10,0.6,8.862078950012801,95.5,4,0,0,0,-10.0,-14.285714285714286,35.06288631762933,4.705882352941177,5,5,5,1,2
+toyota-env4,95,12,phans,7,10,0.7,11.515796300023794,97,3,0,0,0,,,,,,,,,
