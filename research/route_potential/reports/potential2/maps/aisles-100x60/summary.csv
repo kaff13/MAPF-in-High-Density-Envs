@@ -1,0 +1,11 @@
+map,density_pct,targets,solver,solved,total,success_rate,median_time_s,median_makespan,timeouts,unsolved,invalid,crashes,success_rate_gain_pp,success_rate_change_pct,median_time_reduction_pct,median_makespan_reduction_pct,both_solved,time_pairs,makespan_pairs,candidate_only,baseline_only
+all,,,phans,0,40,0.0,,,40,0,0,0,,,,,,,,,
+all,,,potential2,0,40,0.0,,,40,0,0,0,0.0,,,,0,0,0,0,0
+aisles-100x60,50,12,phans,0,10,0.0,,,10,0,0,0,,,,,,,,,
+aisles-100x60,50,12,potential2,0,10,0.0,,,10,0,0,0,0.0,,,,0,0,0,0,0
+aisles-100x60,75,12,phans,0,10,0.0,,,10,0,0,0,,,,,,,,,
+aisles-100x60,75,12,potential2,0,10,0.0,,,10,0,0,0,0.0,,,,0,0,0,0,0
+aisles-100x60,90,12,potential2,0,10,0.0,,,10,0,0,0,0.0,,,,0,0,0,0,0
+aisles-100x60,90,12,phans,0,10,0.0,,,10,0,0,0,,,,,,,,,
+aisles-100x60,95,12,potential2,0,10,0.0,,,10,0,0,0,0.0,,,,0,0,0,0,0
+aisles-100x60,95,12,phans,0,10,0.0,,,10,0,0,0,,,,,,,,,
