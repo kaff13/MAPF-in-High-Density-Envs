@@ -1,0 +1,9 @@
+map,density_pct,targets,solver,solved,total,success_rate,median_time_s,median_makespan,timeouts,unsolved,invalid,crashes,success_rate_gain_pp,success_rate_change_pct,median_time_reduction_pct,median_makespan_reduction_pct,both_solved,time_pairs,makespan_pairs,candidate_only,baseline_only
+all,,,phans,26,30,0.8666666666666667,385.7626991000143,105.5,4,0,0,0,,,,,,,,,
+all,,,candidate,13,30,0.43333333333333335,106.0853132000193,98,17,0,0,0,-43.333333333333336,-50.0,13.001247549403162,1.9607843137254901,11,11,11,2,15
+pillars-70x42,75,12,phans,10,10,1.0,142.268029650033,96.0,0,0,0,0,,,,,,,,,
+pillars-70x42,75,12,candidate,10,10,1.0,102.04076010006247,96.0,0,0,0,0,0.0,0.0,17.10944570675489,2.450980392156863,10,10,10,0,0
+pillars-70x42,90,12,phans,6,10,0.6,692.2924417499453,101.5,4,0,0,0,,,,,,,,,
+pillars-70x42,90,12,candidate,3,10,0.3,723.4596702000126,118,7,0,0,0,-30.0,-50.0,13.001247549403162,-17.391304347826086,1,1,1,2,5
+pillars-70x42,95,12,phans,10,10,1.0,432.8236650999752,138.5,0,0,0,0,,,,,,,,,
+pillars-70x42,95,12,candidate,0,10,0.0,,,10,0,0,0,-100.0,-100.0,,,0,0,0,0,10

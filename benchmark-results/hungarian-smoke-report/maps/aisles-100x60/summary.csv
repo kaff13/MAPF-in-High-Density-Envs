@@ -1,0 +1,11 @@
+map,density_pct,targets,solver,solved,total,success_rate,median_time_s,median_makespan,timeouts,unsolved,invalid,crashes,success_rate_gain_pp,success_rate_change_pct,median_time_reduction_pct,median_makespan_reduction_pct,both_solved,time_pairs,makespan_pairs,candidate_only,baseline_only
+all,,,phans,2,40,0.05,115.64306899998337,136.0,38,0,0,0,,,,,,,,,
+all,,,candidate,6,40,0.15,120.55655609996757,121.5,34,0,0,0,10.0,200.0,18.344983161958616,2.7940856707979993,2,2,2,4,0
+aisles-100x60,50,12,phans,2,10,0.2,115.64306899998337,136.0,8,0,0,0,,,,,,,,,
+aisles-100x60,50,12,candidate,6,10,0.6,120.55655609996757,121.5,4,0,0,0,40.0,200.0,18.344983161958616,2.7940856707979993,2,2,2,4,0
+aisles-100x60,75,12,phans,0,10,0.0,,,10,0,0,0,,,,,,,,,
+aisles-100x60,75,12,candidate,0,10,0.0,,,10,0,0,0,0.0,,,,0,0,0,0,0
+aisles-100x60,90,12,phans,0,10,0.0,,,10,0,0,0,,,,,,,,,
+aisles-100x60,90,12,candidate,0,10,0.0,,,10,0,0,0,0.0,,,,0,0,0,0,0
+aisles-100x60,95,12,phans,0,10,0.0,,,10,0,0,0,,,,,,,,,
+aisles-100x60,95,12,candidate,0,10,0.0,,,10,0,0,0,0.0,,,,0,0,0,0,0

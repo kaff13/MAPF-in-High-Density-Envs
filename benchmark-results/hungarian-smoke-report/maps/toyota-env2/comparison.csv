@@ -1,0 +1,11 @@
+map,density_pct,targets,solver,baseline,paired,both_solved,baseline_only,candidate_only,neither_solved,median_speedup,median_makespan_delta,shorter,equal,longer,success_rate_gain_pp,success_rate_change_pct,median_time_reduction_pct,median_makespan_reduction_pct,time_pairs,makespan_pairs
+all,,,candidate,phans,45,45,0,0,0,1.0017632840482833,0,3,27,15,0.0,0.0,0.17601803503494448,0.0,45,45
+toyota-env2,10,2,candidate,phans,5,5,0,0,0,1.175473954509687,0,0,5,0,0.0,0.0,14.927932161872578,0.0,5,5
+toyota-env2,20,2,candidate,phans,5,5,0,0,0,1.1414291825456226,0,0,5,0,0.0,0.0,12.390535015953107,0.0,5,5
+toyota-env2,30,2,candidate,phans,5,5,0,0,0,0.8886901025946221,0,0,4,1,0.0,0.0,-12.525164518024583,0.0,5,5
+toyota-env2,40,2,candidate,phans,5,5,0,0,0,0.9486426198213079,0,0,4,1,0.0,0.0,-5.413775336002301,0.0,5,5
+toyota-env2,50,2,candidate,phans,5,5,0,0,0,0.9748165204578361,0,0,5,0,0.0,0.0,-2.583407134948447,0.0,5,5
+toyota-env2,60,2,candidate,phans,5,5,0,0,0,0.7842045757166722,0,1,2,2,0.0,0.0,-27.517746129715675,0.0,5,5
+toyota-env2,70,2,candidate,phans,5,5,0,0,0,0.9216109217376574,2,1,0,4,0.0,0.0,-8.505658560832103,-8.695652173913043,5,5
+toyota-env2,80,2,candidate,phans,5,5,0,0,0,0.9587170875081269,5,0,0,5,0.0,0.0,-4.306057858963856,-20.833333333333332,5,5
+toyota-env2,90,2,candidate,phans,5,5,0,0,0,1.018183538386462,0,1,2,2,0.0,0.0,1.7858802171637633,0.0,5,5
