@@ -63,24 +63,29 @@ class ReportArtifactTests(unittest.TestCase):
             with gzip.open(output / row["plan_path"], "rt", encoding="utf-8") as stream:
                 plan = json.load(stream)
             self.assertEqual(plan["frames"], [[[0, 0], [1, 0]], [[0, 0], [2, 0]], [[1, 0], [2, 0]]])
-            report = (output / "report.html").read_text(encoding="utf-8")
+            index = (output / "report.html").read_text(encoding="utf-8")
+            self.assertIn("reports/waited/report.html", index)
+            paired_output = output / "reports" / "waited"
+            report = (paired_output / "report.html").read_text(encoding="utf-8")
             self.assertIn("data:image/png;base64,", report)
             self.assertIn("pairs.csv", report)
             self.assertNotIn("Автоматические выводы", report)
-            self.assertIsNone(re.search(r"<p(?:\s|>)", report))
-            self.assertEqual(report.count("<table>"), 2)
+            self.assertIn("Просмотр планов", report)
+            self.assertEqual(len(re.findall(r"<table\b", report)), 3)
             self.assertIn('id="map-filter"', report)
             self.assertEqual(report.count("data-report-view="), 2)
-            self.assertEqual(report.count('src="data:image/png;base64,'), 8)
+            from benchmark.plots import REPORT_PLOT_NAMES
+            self.assertEqual(report.count('src="data:image/png;base64,'), 2 * len(REPORT_PLOT_NAMES))
             self.assertEqual(
-                {path.stem for path in (output / "plots").glob("*.png")},
-                {"runtime_box", "makespan_box", "success", "success_heatmap"},
+                {path.stem for path in (paired_output / "plots").glob("*.png")},
+                set(REPORT_PLOT_NAMES),
             )
-            self.assertEqual(len(list((output / "maps" / "corridor" / "plots").glob("*.png"))), 4)
-            self.assertTrue((output / "maps" / "corridor" / "results.csv").is_file())
+            self.assertEqual(len(list((paired_output / "maps" / "corridor" / "plots").glob("*.png"))), len(REPORT_PLOT_NAMES))
+            self.assertTrue((paired_output / "maps" / "corridor" / "results.csv").is_file())
             self.assertNotIn('id="groups"', report)
             self.assertNotIn('id="plans"', report)
             self.assertFalse((output / "replays").exists())
+            self.assertTrue((paired_output / "replays" / "good-vs-waited" / "corridor.html").is_file())
             original = (output / "results.csv").read_bytes()
             playback = subprocess.run(
                 [sys.executable, "-m", "benchmark", "replay", str(output),

@@ -239,10 +239,9 @@ assert.equal(scheduled, 0, "opening the replay must not start playback");
 assert.equal(elements.get("play").textContent, "Пуск");
 assert.equal(Number(elements.get("timeline").max), 4);
 elements.get("timeline").handlers.input({target:{value:"4"}});
-assert.equal(elements.get("baseline-tick").textContent, "Такт 2 / 2");
-assert.equal(elements.get("candidate-tick").textContent, "Такт 4 / 4");
-assert.equal(elements.get("baseline-goals").textContent, "У целей: 1 / 1");
-assert.equal(elements.get("candidate-goals").textContent, "У целей: 1 / 1");
+assert.equal(elements.get("baseline-tick").textContent, "Такт: 2 / 2");
+assert.equal(elements.get("candidate-tick").textContent, "Такт: 4 / 4");
+assert.equal(elements.get("tick").textContent, "Такт: 4 / 4");
 assert.equal(scheduled, 0, "scrubbing must leave playback paused");
 '''.replace("PAYLOAD", json.dumps(document.payload)).replace("PLAYER", document.script)
         result = subprocess.run([shutil.which("node"), "-"], input=harness,

@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 from hashlib import sha256
+from html import escape
 import json
 from pathlib import Path
 import shutil
@@ -45,6 +46,7 @@ def build_report_replays(directory, rows, baseline, solver_labels=None):
                         "status": row["status"], "frames": [instance.starts],
                         "trace_available": False, "detail": row.get("detail", ""),
                     }
+                plan = prepare_replay_trace(plan, instance)
                 plan["recorded_status"] = row["status"]
                 plan["recorded_makespan"] = row["makespan"]
                 plans.append(plan)
@@ -102,8 +104,15 @@ def _load_report_sources(run_dirs):
     manifests, rows, origins = [], [], {}
     baseline = dataset_version = phans_commit = None
     solver_entries, seen, scenario_metadata = {}, {}, {}
+    solver_fingerprints = {}
+    campaign_source_digest = None
     for directory in directories:
         manifest, source_rows = read_run(directory, allow_incomplete=True)
+        digest = manifest.get("campaign_source_digest")
+        if digest is not None:
+            if campaign_source_digest is not None and digest != campaign_source_digest:
+                raise ValueError("source differs across frozen campaigns")
+            campaign_source_digest = digest
         if baseline is None:
             baseline = manifest["comparison_baseline"]
         elif manifest["comparison_baseline"] != baseline:
@@ -124,6 +133,11 @@ def _load_report_sources(run_dirs):
             solver_entries[name] = entrypoint
 
         for row in source_rows:
+            fingerprint = row.get("solver_source_sha256")
+            if fingerprint:
+                previous = solver_fingerprints.setdefault(row["solver"], fingerprint)
+                if previous != fingerprint:
+                    raise ValueError(f"solver source differs across source runs for {row['solver']}")
             key = (row["instance_id"], row["solver"])
             metadata = (row["map"], row["density_pct"], row["seed"], row["targets"])
             previous_metadata = scenario_metadata.setdefault(row["instance_id"], metadata)
@@ -182,7 +196,35 @@ def _copy_report_artifacts(output, selected, origins):
                     shutil.copy2(source, target)
 
 
-def build_report(run_dirs, *, output=None, solvers=None, maps=None, densities=None, solver_labels=None):
+def sample_replay_rows(rows, baseline, per_group):
+    """Limit bulky players, not observations used by any benchmark metric."""
+    if per_group is None:
+        return rows
+    if type(per_group) is not int or per_group < 0:
+        raise ValueError("replay sample size must be a nonnegative integer or None")
+    cases = {}
+    for row in rows:
+        cases.setdefault(row["instance_id"], {})[row["solver"]] = row
+    counts, chosen = {}, []
+    for instance_id, solvers in sorted(cases.items()):
+        reference = solvers[baseline]
+        for name, candidate in sorted(solvers.items()):
+            if name == baseline:
+                continue
+            if reference["status"] == candidate["status"] == "solved":
+                delta = candidate["makespan"] - reference["makespan"]
+                outcome = "shorter" if delta < 0 else "longer" if delta > 0 else "equal"
+            else:
+                outcome = (reference["status"] == "solved", candidate["status"] == "solved")
+            group = (reference["map"], reference["density_pct"], name, outcome)
+            if counts.get(group, 0) < per_group:
+                chosen.extend((reference, candidate))
+                counts[group] = counts.get(group, 0) + 1
+    return chosen
+
+
+def build_report(run_dirs, *, output=None, solvers=None, maps=None, densities=None,
+                 solver_labels=None, replay_sample_per_group=None):
     from .plots import REPORT_PLOT_NAMES, render_plots
 
     if isinstance(run_dirs, (str, Path)):
@@ -207,8 +249,14 @@ def build_report(run_dirs, *, output=None, solvers=None, maps=None, densities=No
     if not selected:
         raise ValueError("no rows match report filters")
     candidates = {row["solver"] for row in selected} - {baseline}
-    if len(candidates) != 1:
+    if len(candidates) > 1:
         raise ValueError("a report compares PHANS with one modification; select one with --solver NAME")
+    # Summaries, heatmaps, and paired metrics must describe the same cases and
+    # budgets. Reject inconsistent selections before creating any report files.
+    validate_results(selected, {
+        "instance_ids": sorted({row["instance_id"] for row in selected}),
+        "solvers": {name: solver_entries[name] for name in candidates | {baseline}},
+    })
     if any(not IDENTIFIER.fullmatch(row["map"]) for row in selected):
         raise ValueError("invalid map ID in report data")
 
@@ -241,6 +289,15 @@ def build_report(run_dirs, *, output=None, solvers=None, maps=None, densities=No
             values = [source_manifest.get(key) for _, source_manifest in manifests]
             if values and values[0] is not None and all(value == values[0] for value in values):
                 manifest[key] = values[0]
+        snapshots = [item.get("source_sha256") for _, item in manifests]
+        if snapshots[0] and all(snapshot == snapshots[0] for snapshot in snapshots):
+            source = archived_source(directories[0], manifests[0][1])
+            if source is not None:
+                shutil.copytree(source, output / "sources")
+                manifest["source_sha256"] = snapshots[0]
+        digests = [item.get("campaign_source_digest") for _, item in manifests]
+        if digests[0] and all(digest == digests[0] for digest in digests):
+            manifest["campaign_source_digest"] = digests[0]
         manifest["source_runs"] = [
             {"path": str(directory), "started_at": source_manifest.get("started_at"),
              "finished_at": source_manifest.get("finished_at"), "timeout_s": source_manifest.get("timeout_s")}
@@ -271,11 +328,43 @@ def build_report(run_dirs, *, output=None, solvers=None, maps=None, densities=No
         write_csv(map_output / "results.csv", fields, cases)
         map_plots[map_id] = render_plots(cases, baseline, map_output / "plots", REPORT_PLOT_NAMES,
                                          solver_labels=solver_labels)
-    replays = build_report_replays(output, selected, baseline, solver_labels)
+    replay_rows = sample_replay_rows(selected, baseline, replay_sample_per_group)
+    replays = build_report_replays(output, replay_rows, baseline, solver_labels)
     destination = write_html_report(output, selected, baseline, plots, map_plots=map_plots,
                                     replays=replays, solver_labels=solver_labels)
+    if replay_sample_per_group is not None:
+        document = destination.read_text(encoding="utf-8")
+        total = len({row["instance_id"] for row in selected})
+        notice = (f'<p>Все таблицы и графики используют {total} сценариев. '
+                  f'Для плеера выбрано {len(replays)} пар: до {replay_sample_per_group} '
+                  'на каждую карту, плотность и тип исхода. Полные измерения и '
+                  'сохранённые трассы доступны в файлах отчёта.</p>')
+        destination.write_text(document.replace('<h1>MAPF-HD</h1>', '<h1>MAPF-HD</h1>' + notice),
+                               encoding="utf-8")
     print(destination, flush=True)
     return destination
+
+
+def build_run_reports(directory):
+    """Keep CLI runs valid for baseline-only, paired, and multi-solver runs."""
+    directory = Path(directory)
+    manifest, rows = read_run(directory)
+    baseline = manifest["comparison_baseline"]
+    candidates = sorted(set(manifest["solvers"]) - {baseline})
+    if len(candidates) <= 1:
+        return build_report(directory)
+    write_reports(directory, rows, baseline)
+    links = []
+    for candidate in candidates:
+        destination = directory / "reports" / candidate
+        build_report(directory, output=destination, solvers=[candidate])
+        links.append(f'<li><a href="reports/{escape(candidate)}/report.html">'
+                     f'{escape(baseline)} vs {escape(candidate)}</a></li>')
+    output = directory / "report.html"
+    output.write_text('<!doctype html><html lang="ru"><meta charset="utf-8">'
+                      '<title>MAPF-HD reports</title><h1>MAPF-HD</h1><ul>'
+                      + "".join(links) + '</ul></html>', encoding="utf-8")
+    return output
 
 
 def archived_source(run_dir, manifest):

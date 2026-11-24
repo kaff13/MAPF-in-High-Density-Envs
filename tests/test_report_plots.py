@@ -107,16 +107,20 @@ class PlotExportTests(unittest.TestCase):
                     self.assertIn("<svg", svg)
                     expected_axes = 2 if path.stem == "success_heatmap" else 1
                     self.assertEqual(len(re.findall(r'<g id="axes_\d+">', svg)), expected_axes, path.name)
-                    self.assertNotIn("map-a", svg)
-                    self.assertNotIn("map-b", svg)
+                    if path.stem == "success_heatmap":
+                        self.assertIn("map-a", svg)
+                        self.assertIn("map-b", svg)
+                    else:
+                        self.assertNotIn("map-a", svg)
+                        self.assertNotIn("map-b", svg)
                     self.assertNotIn("Q1", svg)
                     self.assertNotIn("Точки:", svg)
                     self.assertNotIn("только решения", svg)
                     if path.stem in ("runtime_box", "makespan_box"):
                         self.assertIn("base", svg)
                         self.assertIn("candidate", svg)
-                        self.assertIn("n=2", svg)
-                        self.assertIn("Время (с)" if path.stem == "runtime_box" else "Makespan (такты)", svg)
+                        self.assertIn("Общих решений: 2", svg)
+                        self.assertIn("Время решения (с)" if path.stem == "runtime_box" else "Длина плана (такты)", svg)
 
     def test_renderer_rejects_duplicate_attempts_before_writing_charts(self):
         self.assertTrue(hasattr(plots, "render_plots"), "manifest-independent renderer is missing")
@@ -144,13 +148,13 @@ class PlotExportTests(unittest.TestCase):
                                ["runtime", "makespan", "runtime_box", "makespan_box"])
             runtime_svg = (Path(directory) / "runtime.svg").read_text(encoding="utf-8")
             makespan_svg = (Path(directory) / "makespan.svg").read_text(encoding="utf-8")
-            self.assertIn("Время (с)", runtime_svg)
-            self.assertIn("Makespan (такты)", makespan_svg)
+            self.assertIn("Время решения (с)", runtime_svg)
+            self.assertIn("Длина плана (такты)", makespan_svg)
             self.assertNotIn("Сокращение", runtime_svg + makespan_svg)
             for kind in ("runtime_box", "makespan_box"):
                 svg = (Path(directory) / f"{kind}.svg").read_text(encoding="utf-8")
                 self.assertIn("base", svg)
-                self.assertIn("n=1", svg)
+                self.assertIn("Общих решений: 1", svg)
 
 
 if __name__ == "__main__":

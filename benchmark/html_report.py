@@ -3,7 +3,7 @@
 from base64 import b64encode
 from html import escape
 import json
-from statistics import mean
+from statistics import mean, median
 from .reports import compare, number, summarize
 
 STYLE = """
@@ -91,6 +91,20 @@ def _outcomes(comparison, candidate_label):
             f'только PHANS: {comparison["baseline_only"]}; ни один: {comparison["neither_solved"]}')
 
 
+def _paired_summaries(rows, key):
+    """Success uses all cases; absolute medians use identical solved cases."""
+    from .plots import absolute_values
+
+    times = absolute_values(rows, "runtime")
+    lengths = absolute_values(rows, "makespan")
+    for item in summarize(rows, key):
+        name = item["solver"]
+        item["median_time_s"] = median(times[name]) if times[name] else None
+        item["median_makespan"] = median(lengths[name]) if lengths[name] else None
+        item["paired_samples"] = len(times[name])
+        yield item
+
+
 def summary_table(rows, baseline, solver_labels=None, *, pooled=False):
     solver_labels = solver_labels or {}
     candidates = sorted({row["solver"] for row in rows if row["solver"] != baseline})
@@ -105,13 +119,16 @@ def summary_table(rows, baseline, solver_labels=None, *, pooled=False):
         ("Доля решений, %", lambda s, c: f'{s["success_rate"]:.1%}'),
         ("Медианное время, с", lambda s, c: number(s["median_time_s"])),
         ("Медианная длина плана, такты", lambda s, c: number(s["median_makespan"])),
+        ("Общих решений для абсолютных метрик", lambda s, c: str(s["paired_samples"])),
         ("Сокращение времени, %", lambda s, c: signed(c.get("median_time_reduction_pct")) if c else "—"),
         ("Сокращение длины плана, %", lambda s, c: signed(c.get("median_makespan_reduction_pct")) if c else "—"),
+        ("Новые решения", lambda s, c: str(c["candidate_only"]) if c else "—"),
+        ("Потерянные решения", lambda s, c: str(c["baseline_only"]) if c else "—"),
     )
     cells = {}
     for key, cases in group_cases.items():
         summary_key = (key[0] if pooled else "all", key[-1], None)
-        summaries = {item["solver"]: item for item in summarize(cases, summary_key)}
+        summaries = {item["solver"]: item for item in _paired_summaries(cases, summary_key)}
         comparisons = {item["solver"]: item for item in compare(cases, summary_key, baseline)}
         cells[key] = summaries, comparisons
 
@@ -157,12 +174,12 @@ def density_summary_table(rows, baseline, solver_labels=None):
         map_ids = sorted({row["map"] for row in density_rows}, key=_map_order)
         for map_id in map_ids:
             map_rows = [row for row in density_rows if row["map"] == map_id]
-            summaries = {item["solver"]: item for item in summarize(map_rows, ("all", density, None))}
+            summaries = {item["solver"]: item for item in _paired_summaries(map_rows, ("all", density, None))}
             comparisons = {item["solver"]: item for item in compare(map_rows, ("all", density, None), baseline)}
             per_map[map_id] = summaries, comparisons
         groups.append((f"{density}%", per_map))
 
-    all_summaries = {item["solver"]: item for item in summarize(rows, ("all", None, None))}
+    all_summaries = {item["solver"]: item for item in _paired_summaries(rows, ("all", None, None))}
     all_comparisons = {item["solver"]: item for item in compare(rows, ("all", None, None), baseline)}
     groups.append(("Все прогоны", {"__all__": (all_summaries, all_comparisons)}))
 
@@ -288,6 +305,7 @@ def report_view(output, rows, baseline, plots, solver_labels=None, *, scope="", 
     downloads += '<a href="run.json">run.json — параметры запуска</a>'
     return f"""<div data-report-view="{text(scope)}"{" hidden" if scope else ""}>
 <section><h2>{"Сравнение по карте" if scope else "Результаты по картам и плотностям"}</h2>
+<p>Доля решений рассчитана по всем сценариям. Медианы времени и длины плана — по общим решениям сравниваемых реализаций. В summary.csv им соответствуют paired_median_time_s и paired_median_makespan; поля median_time_s и median_makespan сохраняют медианы по собственным успехам каждого солвера.</p>
 {summary_table(rows, baseline, solver_labels, pooled=not bool(scope))}
 {"<h3 class='table-group'>Среднее по картам при каждой плотности</h3>" + density_summary_table(rows, baseline, solver_labels) if not scope else ""}</section>
 <section><h2>Графики</h2><div class="charts">{"".join(figures)}</div></section>

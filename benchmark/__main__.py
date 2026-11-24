@@ -176,9 +176,9 @@ def run_benchmark(args):
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         manifest["finished_at"] = datetime.now(timezone.utc).isoformat()
         write_json(manifest_path, manifest)
-        from .artifacts import build_report
+        from .artifacts import build_run_reports
 
-        build_report(output)
+        build_run_reports(output)
     print(f"Reports: {output}", flush=True)
 
 

@@ -16,6 +16,7 @@ SUMMARY_FIELDS = (
     "success_rate_gain_pp", "success_rate_change_pct",
     "median_time_reduction_pct", "median_makespan_reduction_pct",
     "both_solved", "time_pairs", "makespan_pairs", "candidate_only", "baseline_only",
+    "paired_median_time_s", "paired_median_makespan", "paired_samples",
 )
 COMPARISON_FIELDS = (
     "map", "density_pct", "targets", "solver", "baseline", "paired", "both_solved",
@@ -224,6 +225,22 @@ def write_reports(output, rows, baseline):
     for row in summaries:
         relative = lookup.get((row["map"], row["density_pct"], row["targets"], row["solver"]), {})
         row.update({field: relative.get(field) for field in SUMMARY_FIELDS[13:]})
+    # Keep legacy own-success medians, and explicitly export the common-success
+    # population used by HTML and absolute comparison plots.
+    paired = {}
+    for key, cases in groups.items():
+        solved = [{item["instance_id"] for item in values if item["status"] == "solved"}
+                  for values in by_solver(cases).values()]
+        common = set.intersection(*solved) if solved else set()
+        for solver, values in by_solver(cases).items():
+            shared = [item for item in values if item["instance_id"] in common]
+            paired[(*key, solver)] = {
+                "paired_median_time_s": median(item["computation_time_s"] for item in shared) if shared else None,
+                "paired_median_makespan": median(item["makespan"] for item in shared) if shared else None,
+                "paired_samples": len(shared),
+            }
+    for row in summaries:
+        row.update(paired[(row["map"], row["density_pct"], row["targets"], row["solver"])])
     write_csv(output / "summary.csv", SUMMARY_FIELDS, summaries)
     write_csv(output / "comparison.csv", COMPARISON_FIELDS, comparisons)
     write_csv(output / "pairs.csv", PAIR_FIELDS, pair_rows(rows, baseline))
