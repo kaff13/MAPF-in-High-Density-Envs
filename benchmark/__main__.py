@@ -45,10 +45,13 @@ def make_parser():
     run.add_argument("--timeout", type=float, default=180, metavar="SECONDS")
     run.add_argument("--out", type=Path, help="a new output directory")
 
-    report = commands.add_parser("report", help="build an HTML report from a completed run")
-    report.add_argument("run_dir", type=Path)
+    report = commands.add_parser("report", help="build an HTML report from one or more benchmark runs")
+    report.add_argument("run_dirs", nargs="+", type=Path,
+                        help="one or more run folders containing run.json and results.csv")
     report.add_argument("--out", type=Path, help="new folder for an exported report")
     report.add_argument("--solver", action="append", dest="solvers", help="select solver names")
+    report.add_argument("--solver-label", action="append", default=[], metavar="NAME=LABEL",
+                        help="display a solver ID under a readable label in the report")
     report.add_argument("--map", action="append", dest="maps")
     report.add_argument("--density", nargs="+", type=int)
 
@@ -229,7 +232,14 @@ def main():
         elif args.command == "report":
             from .artifacts import build_report
 
-            build_report(args.run_dir, output=args.out, solvers=args.solvers, maps=args.maps, densities=args.density)
+            labels = {}
+            for item in args.solver_label:
+                name, separator, label = item.partition("=")
+                if not separator or not name.strip() or not label.strip():
+                    raise ValueError("--solver-label must use NAME=LABEL")
+                labels[name.strip()] = label.strip()
+            build_report(args.run_dirs, output=args.out, solvers=args.solvers, maps=args.maps,
+                         densities=args.density, solver_labels=labels)
         elif args.command == "replay":
             from .artifacts import replay_run
 

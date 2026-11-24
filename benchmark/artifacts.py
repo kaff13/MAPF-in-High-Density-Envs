@@ -13,11 +13,74 @@ from .reports import RESULT_FIELDS, read_results, validate_results, write_csv, w
 from .runner import Solver, extract_baseline, run_attempt
 
 
-def read_run(directory):
+def build_report_replays(directory, rows, baseline, solver_labels=None):
+    """Create offline paired players from the traces already saved in a run."""
+    from .replay import load_plan, write_paired_replay
+
+    solver_labels = solver_labels or {}
+    grouped = {}
+    for row in rows:
+        grouped.setdefault(row["instance_id"], {})[row["solver"]] = row
+    candidates = sorted({row["solver"] for row in rows if row["solver"] != baseline})
+    pages = []
+    for instance_id, solver_rows in sorted(grouped.items()):
+        if baseline not in solver_rows:
+            continue
+        instance_path = inside_run(directory, Path("instances") / f"{instance_id}.json")
+        if not instance_path.is_file():
+            continue
+        instance = Instance.from_json(json.loads(instance_path.read_text(encoding="utf-8")))
+        for candidate in candidates:
+            if candidate not in solver_rows:
+                continue
+            plans = []
+            for name in (baseline, candidate):
+                row = solver_rows[name]
+                path = inside_run(directory, row["plan_path"]) if row.get("plan_path") else None
+                if path is not None and path.is_file():
+                    plan = load_plan(path)
+                else:
+                    plan = {
+                        "instance_id": instance_id, "solver": name,
+                        "status": row["status"], "frames": [instance.starts],
+                        "trace_available": False, "detail": row.get("detail", ""),
+                    }
+                plan["recorded_status"] = row["status"]
+                plan["recorded_makespan"] = row["makespan"]
+                plans.append(plan)
+            relative = Path("replays") / f"{baseline}-vs-{candidate}" / f"{instance_id}.html"
+            write_paired_replay(
+                instance, plans[0], plans[1], inside_run(directory, relative),
+                baseline_name=solver_labels.get(baseline, "PHANS"),
+                candidate_name=solver_labels.get(candidate, candidate),
+            )
+            before, after = solver_rows[baseline], solver_rows[candidate]
+            baseline_solved = before["status"] == "solved"
+            candidate_solved = after["status"] == "solved"
+            delta = after["makespan"] - before["makespan"] if baseline_solved and candidate_solved else None
+            if baseline_solved and candidate_solved:
+                category = "candidate_better" if delta < 0 else "baseline_better" if delta > 0 else "equal"
+            elif candidate_solved:
+                category = "candidate_only"
+            elif baseline_solved:
+                category = "baseline_only"
+            else:
+                category = "neither"
+            pages.append({
+                "scenario": instance_id, "map": before["map"],
+                "density": before["density_pct"], "seed": before["seed"],
+                "solver": candidate, "baseline_status": before["status"],
+                "status": after["status"], "makespan_delta": delta,
+                "category": category, "path": relative.as_posix(),
+            })
+    return pages
+
+
+def read_run(directory, *, allow_incomplete=False):
     directory = directory.resolve()
     manifest = json.loads((directory / "run.json").read_text(encoding="utf-8"))
     rows = read_results(directory / "results.csv")
-    validate_results(rows, manifest)
+    validate_results(rows, manifest, require_complete=not allow_incomplete)
     return manifest, rows
 
 
@@ -29,13 +92,110 @@ def inside_run(directory, relative):
     return path
 
 
-def build_report(run_dir, *, output=None, solvers=None, maps=None, densities=None):
+def _load_report_sources(run_dirs):
+    directories = [Path(path).resolve() for path in run_dirs]
+    if not directories:
+        raise ValueError("provide at least one source run folder")
+    if len(directories) != len(set(directories)):
+        raise ValueError("the same source run folder was supplied more than once")
+
+    manifests, rows, origins = [], [], {}
+    baseline = dataset_version = phans_commit = None
+    solver_entries, seen, scenario_metadata = {}, {}, {}
+    for directory in directories:
+        manifest, source_rows = read_run(directory, allow_incomplete=True)
+        if baseline is None:
+            baseline = manifest["comparison_baseline"]
+        elif manifest["comparison_baseline"] != baseline:
+            raise ValueError("all source runs must use the same comparison baseline")
+        if dataset_version is None:
+            dataset_version = manifest.get("dataset_version")
+        elif manifest.get("dataset_version") != dataset_version:
+            raise ValueError("all source runs must use the same dataset version")
+        if manifest.get("phans_commit"):
+            if phans_commit is None:
+                phans_commit = manifest["phans_commit"]
+            elif manifest["phans_commit"] != phans_commit:
+                raise ValueError("all source runs must use the same pinned PHANS baseline")
+
+        for name, entrypoint in manifest["solvers"].items():
+            if name in solver_entries and solver_entries[name] != entrypoint:
+                raise ValueError(f"solver {name!r} has different entrypoints across source runs")
+            solver_entries[name] = entrypoint
+
+        for row in source_rows:
+            key = (row["instance_id"], row["solver"])
+            metadata = (row["map"], row["density_pct"], row["seed"], row["targets"])
+            previous_metadata = scenario_metadata.setdefault(row["instance_id"], metadata)
+            if previous_metadata != metadata:
+                raise ValueError(f"scenario metadata differs across source runs for {row['instance_id']}")
+            if key in seen:
+                index, previous_row = seen[key]
+                previous_hash = previous_row.get("solver_source_sha256")
+                current_hash = row.get("solver_source_sha256")
+                if previous_hash and current_hash and previous_hash != current_hash:
+                    raise ValueError(f"solver source differs for duplicate scenario {key[0]} and solver {key[1]}")
+                if row == previous_row:
+                    continue
+                if row["timeout_s"] == previous_row["timeout_s"]:
+                    raise ValueError(f"duplicate result with the same time limit for scenario {key[0]} and solver {key[1]}")
+                if row["timeout_s"] > previous_row["timeout_s"]:
+                    rows[index] = row
+                    origins[key] = directory
+                    seen[key] = (index, row)
+                continue
+            seen[key] = (len(rows), row)
+            rows.append(row)
+            origins[key] = directory
+        manifests.append((directory, manifest))
+
+    if not rows:
+        raise ValueError("source runs contain no recorded results")
+    return directories, manifests, rows, origins, baseline, solver_entries
+
+
+def _copy_report_artifacts(output, selected, origins):
+    copied_instances = set()
+    for row in selected:
+        directory = origins[(row["instance_id"], row["solver"])]
+        instance_id = row["instance_id"]
+        instance_relative = Path("instances") / f"{instance_id}.json"
+        source_instance = inside_run(directory, instance_relative)
+        if not source_instance.is_file():
+            raise ValueError(f"missing saved instance {instance_id} in {directory}")
+        target_instance = inside_run(output, instance_relative)
+        if instance_id not in copied_instances:
+            target_instance.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source_instance, target_instance)
+            copied_instances.add(instance_id)
+        elif source_instance.read_bytes() != target_instance.read_bytes():
+            raise ValueError(f"saved instance differs across source runs for {instance_id}")
+
+        relatives = [Path(row["plan_path"])] if row.get("plan_path") else []
+        relatives.append(Path("logs") / row["solver"] / f"{instance_id}.log")
+        for relative in relatives:
+            source = inside_run(directory, relative)
+            if source.is_file():
+                target = inside_run(output, relative)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                if not target.exists():
+                    shutil.copy2(source, target)
+
+
+def build_report(run_dirs, *, output=None, solvers=None, maps=None, densities=None, solver_labels=None):
     from .plots import REPORT_PLOT_NAMES, render_plots
 
-    run_dir = run_dir.resolve()
-    manifest, rows = read_run(run_dir)
-    baseline = manifest["comparison_baseline"]
-    if solvers and any(name not in manifest["solvers"] for name in solvers):
+    if isinstance(run_dirs, (str, Path)):
+        run_dirs = [run_dirs]
+    directories, manifests, rows, origins, baseline, solver_entries = _load_report_sources(run_dirs)
+    manifest_labels = {}
+    for _, source_manifest in manifests:
+        manifest_labels.update(source_manifest.get("solver_labels", {}))
+    solver_labels = manifest_labels | (solver_labels or {})
+    if any(name not in solver_entries for name in solver_labels):
+        raise ValueError("display label names an unknown solver")
+    solver_labels.setdefault(baseline, "PHANS")
+    if solvers and any(name not in solver_entries for name in solvers):
         raise ValueError("report filter names an unknown solver")
     selected_solvers = set(solvers) | {baseline} if solvers else None
     selected = [
@@ -46,55 +206,61 @@ def build_report(run_dir, *, output=None, solvers=None, maps=None, densities=Non
     ]
     if not selected:
         raise ValueError("no rows match report filters")
+    candidates = {row["solver"] for row in selected} - {baseline}
+    if len(candidates) != 1:
+        raise ValueError("a report compares PHANS with one modification; select one with --solver NAME")
     if any(not IDENTIFIER.fullmatch(row["map"]) for row in selected):
         raise ValueError("invalid map ID in report data")
+
     filtered = bool(solvers or maps or densities)
     if output is None:
-        output = run_dir / "reports" / datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ") if filtered else run_dir
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+        if len(directories) > 1:
+            output = Path("benchmark-results") / f"combined-report-{timestamp}"
+        else:
+            output = directories[0] / "reports" / timestamp if filtered else directories[0]
     output = output.resolve()
-    if filtered and output == run_dir:
+    if len(directories) > 1 and output in directories:
+        raise ValueError("a combined report needs its own output folder")
+    if filtered and len(directories) == 1 and output == directories[0]:
         raise ValueError("filtered reports need a separate output directory")
-    if output != run_dir:
+
+    if output not in directories:
         output.mkdir(parents=True, exist_ok=False)
-        for folder in ("instances", "logs", "plans"):
-            for row in selected:
-                if folder == "instances":
-                    relative = Path(folder) / f'{row["instance_id"]}.json'
-                elif folder == "plans":
-                    if not row.get("plan_path"):
-                        continue
-                    relative = Path(row["plan_path"])
-                else:
-                    relative = Path(folder) / row["solver"] / f'{row["instance_id"]}.log'
-                source = inside_run(run_dir, relative)
-                if source.is_file():
-                    target = inside_run(output, relative)
-                    target.parent.mkdir(parents=True, exist_ok=True)
-                    if not target.exists():
-                        shutil.copy2(source, target)
-        if (run_dir / "sources").is_dir():
-            shutil.copytree(run_dir / "sources", output / "sources")
-        manifest = dict(manifest)
-        manifest["source_run"] = str(run_dir)
+        _copy_report_artifacts(output, selected, origins)
+        chosen_solvers = {row["solver"] for row in selected}
+        manifest = {
+            "dataset_version": manifests[0][1].get("dataset_version"),
+            "comparison_baseline": baseline,
+            "solvers": {name: entry for name, entry in solver_entries.items() if name in chosen_solvers},
+            "solver_labels": {name: label for name, label in solver_labels.items() if name in chosen_solvers},
+            "instance_ids": sorted({row["instance_id"] for row in selected}),
+            "timeout_budgets_s": sorted({row["timeout_s"] for row in selected}),
+        }
+        for key in ("phans_commit", "phans_parameters"):
+            values = [source_manifest.get(key) for _, source_manifest in manifests]
+            if values and values[0] is not None and all(value == values[0] for value in values):
+                manifest[key] = values[0]
+        manifest["source_runs"] = [
+            {"path": str(directory), "started_at": source_manifest.get("started_at"),
+             "finished_at": source_manifest.get("finished_at"), "timeout_s": source_manifest.get("timeout_s")}
+            for directory, source_manifest in manifests
+        ]
         manifest["report_created_at"] = datetime.now(timezone.utc).isoformat()
         manifest["report_filters"] = {"solvers": solvers, "maps": maps, "densities": densities}
-        chosen_solvers = {row["solver"] for row in selected}
-        manifest["solvers"] = {name: entrypoint for name, entrypoint in manifest["solvers"].items() if name in chosen_solvers}
-        chosen_ids = {row["instance_id"] for row in selected}
-        manifest["instance_ids"] = [case for case in manifest["instance_ids"] if case in chosen_ids]
         from .__main__ import instance_set_hash
 
         instances = [
             Instance.from_json(json.loads((output / "instances" / f"{case}.json").read_text(encoding="utf-8")))
             for case in manifest["instance_ids"]
         ]
-        manifest["source_instance_set_sha256"] = manifest["instance_set_sha256"]
         manifest["instance_set_sha256"] = instance_set_hash(instances)
         (output / "run.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
         fields = list(dict.fromkeys([*RESULT_FIELDS, *(key for row in selected for key in row)]))
         write_csv(output / "results.csv", fields, selected)
+
     write_reports(output, selected, baseline)
-    plots = render_plots(selected, baseline, output / "plots", REPORT_PLOT_NAMES)
+    plots = render_plots(selected, baseline, output / "plots", REPORT_PLOT_NAMES, solver_labels=solver_labels)
     map_plots = {}
     for map_id in sorted({row["map"] for row in selected}):
         cases = [row for row in selected if row["map"] == map_id]
@@ -103,8 +269,11 @@ def build_report(run_dir, *, output=None, solvers=None, maps=None, densities=Non
         write_reports(map_output, cases, baseline)
         fields = list(dict.fromkeys([*RESULT_FIELDS, *(key for row in cases for key in row)]))
         write_csv(map_output / "results.csv", fields, cases)
-        map_plots[map_id] = render_plots(cases, baseline, map_output / "plots", REPORT_PLOT_NAMES)
-    destination = write_html_report(output, selected, baseline, plots, map_plots=map_plots)
+        map_plots[map_id] = render_plots(cases, baseline, map_output / "plots", REPORT_PLOT_NAMES,
+                                         solver_labels=solver_labels)
+    replays = build_report_replays(output, selected, baseline, solver_labels)
+    destination = write_html_report(output, selected, baseline, plots, map_plots=map_plots,
+                                    replays=replays, solver_labels=solver_labels)
     print(destination, flush=True)
     return destination
 
