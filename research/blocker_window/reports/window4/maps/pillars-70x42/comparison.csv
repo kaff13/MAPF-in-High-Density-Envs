@@ -1,0 +1,6 @@
+map,density_pct,targets,solver,baseline,paired,both_solved,baseline_only,candidate_only,neither_solved,median_speedup,median_makespan_delta,shorter,equal,longer,success_rate_gain_pp,success_rate_change_pct,median_time_reduction_pct,median_makespan_reduction_pct,time_pairs,makespan_pairs
+all,,,window4,phans,40,0,0,6,34,,,0,0,0,15.0,,,,0,0
+pillars-70x42,50,12,window4,phans,10,0,0,1,9,,,0,0,0,10.0,,,,0,0
+pillars-70x42,75,12,window4,phans,10,0,0,2,8,,,0,0,0,20.0,,,,0,0
+pillars-70x42,90,12,window4,phans,10,0,0,3,7,,,0,0,0,30.0,,,,0,0
+pillars-70x42,95,12,window4,phans,10,0,0,0,10,,,0,0,0,0.0,,,,0,0

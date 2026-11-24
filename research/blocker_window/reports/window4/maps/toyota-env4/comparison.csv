@@ -1,0 +1,6 @@
+map,density_pct,targets,solver,baseline,paired,both_solved,baseline_only,candidate_only,neither_solved,median_speedup,median_makespan_delta,shorter,equal,longer,success_rate_gain_pp,success_rate_change_pct,median_time_reduction_pct,median_makespan_reduction_pct,time_pairs,makespan_pairs
+all,,,window4,phans,40,14,2,15,9,1.456127051182242,0.0,5,4,5,32.5,81.25,30.677164612341134,0.0,14,14
+toyota-env4,50,12,window4,phans,10,8,0,2,0,1.7267197782860022,-0.5,4,3,1,20.0,25.0,42.06338719991611,1.0638297872340425,8,8
+toyota-env4,75,12,window4,phans,10,0,0,7,3,,,0,0,0,70.0,,,,0,0
+toyota-env4,90,12,window4,phans,10,0,1,5,4,,,0,0,0,40.0,400.0,,,0,0
+toyota-env4,95,12,window4,phans,10,6,1,1,2,1.31055188790287,2.0,1,1,4,0.0,0.0,23.695224721804646,-2.1980676328502415,6,6
