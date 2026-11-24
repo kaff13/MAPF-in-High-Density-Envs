@@ -1,0 +1,81 @@
+instance_id,map,density_pct,actual_density_pct,paper_density_pct,empty_cells,targets,seed,solver,solver_source_sha256,status,computation_time_s,makespan,timeout_s,detail,plan_path
+pillars-70x42-d050-s100,pillars-70x42,50,50.0,53.265306122448976,1362,12,100,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,2.3402822999632917,66,15.0,,plans/engineering/pillars-70x42-d050-s100.json.gz
+pillars-70x42-d050-s100,pillars-70x42,50,50.0,53.265306122448976,1362,12,100,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d075-s100,pillars-70x42,75,75.0,76.42857142857142,681,12,100,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,4.150383599975612,70,15.0,,plans/engineering/pillars-70x42-d075-s100.json.gz
+pillars-70x42-d075-s100,pillars-70x42,75,75.0,76.42857142857142,681,12,100,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d090-s100,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,100,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d090-s100,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,100,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s100,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,100,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s100,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,100,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d050-s101,pillars-70x42,50,50.0,53.265306122448976,1362,12,101,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d050-s101,pillars-70x42,50,50.0,53.265306122448976,1362,12,101,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,12.163560100016184,91,15.0,,plans/engineering/pillars-70x42-d050-s101.json.gz
+pillars-70x42-d075-s101,pillars-70x42,75,75.0,76.42857142857142,681,12,101,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d075-s101,pillars-70x42,75,75.0,76.42857142857142,681,12,101,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d090-s101,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,101,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d090-s101,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,101,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s101,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,101,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s101,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,101,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d050-s102,pillars-70x42,50,50.0,53.265306122448976,1362,12,102,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,3.8209917999920435,73,15.0,,plans/engineering/pillars-70x42-d050-s102.json.gz
+pillars-70x42-d050-s102,pillars-70x42,50,50.0,53.265306122448976,1362,12,102,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d075-s102,pillars-70x42,75,75.0,76.42857142857142,681,12,102,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d075-s102,pillars-70x42,75,75.0,76.42857142857142,681,12,102,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,8.911123699974269,77,15.0,,plans/engineering/pillars-70x42-d075-s102.json.gz
+pillars-70x42-d090-s102,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,102,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d090-s102,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,102,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s102,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,102,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s102,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,102,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d050-s103,pillars-70x42,50,50.0,53.265306122448976,1362,12,103,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,4.6575587000115775,95,15.0,,plans/engineering/pillars-70x42-d050-s103.json.gz
+pillars-70x42-d050-s103,pillars-70x42,50,50.0,53.265306122448976,1362,12,103,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d075-s103,pillars-70x42,75,75.0,76.42857142857142,681,12,103,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,8.630957399960607,96,15.0,,plans/engineering/pillars-70x42-d075-s103.json.gz
+pillars-70x42-d075-s103,pillars-70x42,75,75.0,76.42857142857142,681,12,103,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d090-s103,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,103,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d090-s103,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,103,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s103,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,103,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s103,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,103,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d050-s104,pillars-70x42,50,50.0,53.265306122448976,1362,12,104,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,9.613858699973207,95,15.0,,plans/engineering/pillars-70x42-d050-s104.json.gz
+pillars-70x42-d050-s104,pillars-70x42,50,50.0,53.265306122448976,1362,12,104,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d075-s104,pillars-70x42,75,75.0,76.42857142857142,681,12,104,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,14.038270300021395,98,15.0,,plans/engineering/pillars-70x42-d075-s104.json.gz
+pillars-70x42-d075-s104,pillars-70x42,75,75.0,76.42857142857142,681,12,104,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d090-s104,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,104,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d090-s104,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,104,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s104,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,104,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s104,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,104,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d050-s105,pillars-70x42,50,50.0,53.265306122448976,1362,12,105,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,3.826547800039407,91,15.0,,plans/engineering/pillars-70x42-d050-s105.json.gz
+pillars-70x42-d050-s105,pillars-70x42,50,50.0,53.265306122448976,1362,12,105,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d075-s105,pillars-70x42,75,75.0,76.42857142857142,681,12,105,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d075-s105,pillars-70x42,75,75.0,76.42857142857142,681,12,105,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,12.43256379995728,94,15.0,,plans/engineering/pillars-70x42-d075-s105.json.gz
+pillars-70x42-d090-s105,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,105,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d090-s105,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,105,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s105,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,105,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s105,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,105,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d050-s106,pillars-70x42,50,50.0,53.265306122448976,1362,12,106,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,4.963371500023641,95,15.0,,plans/engineering/pillars-70x42-d050-s106.json.gz
+pillars-70x42-d050-s106,pillars-70x42,50,50.0,53.265306122448976,1362,12,106,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d075-s106,pillars-70x42,75,75.0,76.42857142857142,681,12,106,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d075-s106,pillars-70x42,75,75.0,76.42857142857142,681,12,106,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,12.38766609999584,100,15.0,,plans/engineering/pillars-70x42-d075-s106.json.gz
+pillars-70x42-d090-s106,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,106,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d090-s106,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,106,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s106,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,106,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s106,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,106,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d050-s107,pillars-70x42,50,50.0,53.265306122448976,1362,12,107,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,5.552896699984558,95,15.0,,plans/engineering/pillars-70x42-d050-s107.json.gz
+pillars-70x42-d050-s107,pillars-70x42,50,50.0,53.265306122448976,1362,12,107,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d075-s107,pillars-70x42,75,75.0,76.42857142857142,681,12,107,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d075-s107,pillars-70x42,75,75.0,76.42857142857142,681,12,107,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,11.57862300000852,96,15.0,,plans/engineering/pillars-70x42-d075-s107.json.gz
+pillars-70x42-d090-s107,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,107,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d090-s107,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,107,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s107,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,107,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s107,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,107,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d050-s108,pillars-70x42,50,50.0,53.265306122448976,1362,12,108,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,6.193686600017827,90,15.0,,plans/engineering/pillars-70x42-d050-s108.json.gz
+pillars-70x42-d050-s108,pillars-70x42,50,50.0,53.265306122448976,1362,12,108,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d075-s108,pillars-70x42,75,75.0,76.42857142857142,681,12,108,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d075-s108,pillars-70x42,75,75.0,76.42857142857142,681,12,108,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,10.820099500007927,89,15.0,,plans/engineering/pillars-70x42-d075-s108.json.gz
+pillars-70x42-d090-s108,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,108,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d090-s108,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,108,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s108,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,108,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s108,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,108,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d050-s109,pillars-70x42,50,50.0,53.265306122448976,1362,12,109,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,5.371944799961057,92,15.0,,plans/engineering/pillars-70x42-d050-s109.json.gz
+pillars-70x42-d050-s109,pillars-70x42,50,50.0,53.265306122448976,1362,12,109,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d075-s109,pillars-70x42,75,75.0,76.42857142857142,681,12,109,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d075-s109,pillars-70x42,75,75.0,76.42857142857142,681,12,109,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,10.196916099986993,96,15.0,,plans/engineering/pillars-70x42-d075-s109.json.gz
+pillars-70x42-d090-s109,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,109,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d090-s109,pillars-70x42,90,90.01468428781205,90.34013605442178,272,12,109,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s109,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,109,phans,,timeout,15.0,,15.0,planning time limit reached,
+pillars-70x42-d095-s109,pillars-70x42,95,95.00734214390602,94.96598639455782,136,12,109,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,timeout,15.0,,15.0,planning time limit reached,

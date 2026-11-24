@@ -1,0 +1,81 @@
+instance_id,map,density_pct,actual_density_pct,paper_density_pct,empty_cells,targets,seed,solver,solver_source_sha256,status,computation_time_s,makespan,timeout_s,detail,plan_path
+toyota-env4-d050-s100,toyota-env4,50,49.92248062015504,54.421768707483,323,12,100,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,0.8813173999660648,48,15.0,,plans/engineering/toyota-env4-d050-s100.json.gz
+toyota-env4-d050-s100,toyota-env4,50,49.92248062015504,54.421768707483,323,12,100,phans,,solved,7.343386800028384,48,15.0,,plans/phans/toyota-env4-d050-s100.json.gz
+toyota-env4-d075-s100,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,100,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,2.9618855000007898,57,15.0,,plans/engineering/toyota-env4-d075-s100.json.gz
+toyota-env4-d075-s100,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,100,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d090-s100,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,100,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,2.245429999951739,81,15.0,,plans/engineering/toyota-env4-d090-s100.json.gz
+toyota-env4-d090-s100,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,100,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d095-s100,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,100,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,1.9955884999944828,118,15.0,,plans/engineering/toyota-env4-d095-s100.json.gz
+toyota-env4-d095-s100,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,100,phans,,solved,11.734044699987862,118,15.0,,plans/phans/toyota-env4-d095-s100.json.gz
+toyota-env4-d050-s101,toyota-env4,50,49.92248062015504,54.421768707483,323,12,101,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,0.47310830000787973,42,15.0,,plans/engineering/toyota-env4-d050-s101.json.gz
+toyota-env4-d050-s101,toyota-env4,50,49.92248062015504,54.421768707483,323,12,101,phans,,solved,1.78913350001676,42,15.0,,plans/phans/toyota-env4-d050-s101.json.gz
+toyota-env4-d075-s101,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,101,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,4.472406000015326,55,15.0,,plans/engineering/toyota-env4-d075-s101.json.gz
+toyota-env4-d075-s101,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,101,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d090-s101,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,101,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,2.7511909999884665,66,15.0,,plans/engineering/toyota-env4-d090-s101.json.gz
+toyota-env4-d090-s101,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,101,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d095-s101,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,101,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,2.032279999984894,97,15.0,,plans/engineering/toyota-env4-d095-s101.json.gz
+toyota-env4-d095-s101,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,101,phans,,solved,11.515796300023794,97,15.0,,plans/phans/toyota-env4-d095-s101.json.gz
+toyota-env4-d050-s102,toyota-env4,50,49.92248062015504,54.421768707483,323,12,102,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,1.606337400036864,56,15.0,,plans/engineering/toyota-env4-d050-s102.json.gz
+toyota-env4-d050-s102,toyota-env4,50,49.92248062015504,54.421768707483,323,12,102,phans,,solved,10.497141300002113,56,15.0,,plans/phans/toyota-env4-d050-s102.json.gz
+toyota-env4-d075-s102,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,102,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,2.8837888999842107,68,15.0,,plans/engineering/toyota-env4-d075-s102.json.gz
+toyota-env4-d075-s102,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,102,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d090-s102,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,102,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,3.201673000003211,93,15.0,,plans/engineering/toyota-env4-d090-s102.json.gz
+toyota-env4-d090-s102,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,102,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d095-s102,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,102,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,4.500815599982161,137,15.0,,plans/engineering/toyota-env4-d095-s102.json.gz
+toyota-env4-d095-s102,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,102,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d050-s103,toyota-env4,50,49.92248062015504,54.421768707483,323,12,103,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,1.6749783999985084,55,15.0,,plans/engineering/toyota-env4-d050-s103.json.gz
+toyota-env4-d050-s103,toyota-env4,50,49.92248062015504,54.421768707483,323,12,103,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d075-s103,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,103,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,3.9385317999986,60,15.0,,plans/engineering/toyota-env4-d075-s103.json.gz
+toyota-env4-d075-s103,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,103,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d090-s103,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,103,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d090-s103,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,103,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,4.66346979996888,91,15.0,,plans/engineering/toyota-env4-d090-s103.json.gz
+toyota-env4-d095-s103,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,103,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,3.9622612000093795,129,15.0,,plans/engineering/toyota-env4-d095-s103.json.gz
+toyota-env4-d095-s103,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,103,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d050-s104,toyota-env4,50,49.92248062015504,54.421768707483,323,12,104,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,2.56678799999645,47,15.0,,plans/engineering/toyota-env4-d050-s104.json.gz
+toyota-env4-d050-s104,toyota-env4,50,49.92248062015504,54.421768707483,323,12,104,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d075-s104,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,104,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,6.321341100032441,69,15.0,,plans/engineering/toyota-env4-d075-s104.json.gz
+toyota-env4-d075-s104,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,104,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d090-s104,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,104,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,3.2324165000463836,71,15.0,,plans/engineering/toyota-env4-d090-s104.json.gz
+toyota-env4-d090-s104,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,104,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d095-s104,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,104,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,2.887462799961213,114,15.0,,plans/engineering/toyota-env4-d095-s104.json.gz
+toyota-env4-d095-s104,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,104,phans,,solved,14.972691800037865,114,15.0,,plans/phans/toyota-env4-d095-s104.json.gz
+toyota-env4-d050-s105,toyota-env4,50,49.92248062015504,54.421768707483,323,12,105,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,0.3320915999938734,38,15.0,,plans/engineering/toyota-env4-d050-s105.json.gz
+toyota-env4-d050-s105,toyota-env4,50,49.92248062015504,54.421768707483,323,12,105,phans,,solved,2.3762378999963403,38,15.0,,plans/phans/toyota-env4-d050-s105.json.gz
+toyota-env4-d075-s105,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,105,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,3.8297003000043333,45,15.0,,plans/engineering/toyota-env4-d075-s105.json.gz
+toyota-env4-d075-s105,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,105,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d090-s105,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,105,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,2.666101500042714,71,15.0,,plans/engineering/toyota-env4-d090-s105.json.gz
+toyota-env4-d090-s105,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,105,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d095-s105,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,105,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,1.9590971000143327,103,15.0,,plans/engineering/toyota-env4-d095-s105.json.gz
+toyota-env4-d095-s105,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,105,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d050-s106,toyota-env4,50,49.92248062015504,54.421768707483,323,12,106,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,0.7506391999777406,42,15.0,,plans/engineering/toyota-env4-d050-s106.json.gz
+toyota-env4-d050-s106,toyota-env4,50,49.92248062015504,54.421768707483,323,12,106,phans,,solved,7.560098599991761,42,15.0,,plans/phans/toyota-env4-d050-s106.json.gz
+toyota-env4-d075-s106,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,106,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,1.6950828999979421,46,15.0,,plans/engineering/toyota-env4-d075-s106.json.gz
+toyota-env4-d075-s106,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,106,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d090-s106,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,106,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,2.4787882999517024,71,15.0,,plans/engineering/toyota-env4-d090-s106.json.gz
+toyota-env4-d090-s106,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,106,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d095-s106,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,106,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,1.6004363000392914,90,15.0,,plans/engineering/toyota-env4-d095-s106.json.gz
+toyota-env4-d095-s106,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,106,phans,,solved,11.252996299997903,90,15.0,,plans/phans/toyota-env4-d095-s106.json.gz
+toyota-env4-d050-s107,toyota-env4,50,49.92248062015504,54.421768707483,323,12,107,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,0.8443723000236787,46,15.0,,plans/engineering/toyota-env4-d050-s107.json.gz
+toyota-env4-d050-s107,toyota-env4,50,49.92248062015504,54.421768707483,323,12,107,phans,,solved,5.608176000008825,46,15.0,,plans/phans/toyota-env4-d050-s107.json.gz
+toyota-env4-d075-s107,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,107,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,1.9244929000269622,46,15.0,,plans/engineering/toyota-env4-d075-s107.json.gz
+toyota-env4-d075-s107,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,107,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d090-s107,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,107,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,1.7667530999751762,60,15.0,,plans/engineering/toyota-env4-d090-s107.json.gz
+toyota-env4-d090-s107,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,107,phans,,solved,12.524498700047843,60,15.0,,plans/phans/toyota-env4-d090-s107.json.gz
+toyota-env4-d095-s107,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,107,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,1.8483461000141688,92,15.0,,plans/engineering/toyota-env4-d095-s107.json.gz
+toyota-env4-d095-s107,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,107,phans,,solved,10.679200800019316,92,15.0,,plans/phans/toyota-env4-d095-s107.json.gz
+toyota-env4-d050-s108,toyota-env4,50,49.92248062015504,54.421768707483,323,12,108,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,0.8899778000195511,47,15.0,,plans/engineering/toyota-env4-d050-s108.json.gz
+toyota-env4-d050-s108,toyota-env4,50,49.92248062015504,54.421768707483,323,12,108,phans,,solved,14.909977000032086,47,15.0,,plans/phans/toyota-env4-d050-s108.json.gz
+toyota-env4-d075-s108,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,108,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,3.0620456999749877,53,15.0,,plans/engineering/toyota-env4-d075-s108.json.gz
+toyota-env4-d075-s108,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,108,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d090-s108,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,108,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,2.928703500016127,73,15.0,,plans/engineering/toyota-env4-d090-s108.json.gz
+toyota-env4-d090-s108,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,108,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d095-s108,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,108,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,2.28527180000674,97,15.0,,plans/engineering/toyota-env4-d095-s108.json.gz
+toyota-env4-d095-s108,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,108,phans,,solved,13.226906099996995,97,15.0,,plans/phans/toyota-env4-d095-s108.json.gz
+toyota-env4-d050-s109,toyota-env4,50,49.92248062015504,54.421768707483,323,12,109,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,0.45084499998483807,39,15.0,,plans/engineering/toyota-env4-d050-s109.json.gz
+toyota-env4-d050-s109,toyota-env4,50,49.92248062015504,54.421768707483,323,12,109,phans,,solved,2.8588679000386037,39,15.0,,plans/phans/toyota-env4-d050-s109.json.gz
+toyota-env4-d075-s109,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,109,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,1.33767080004327,39,15.0,,plans/engineering/toyota-env4-d075-s109.json.gz
+toyota-env4-d075-s109,toyota-env4,75,75.03875968992249,76.46258503401361,161,12,109,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d090-s109,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,109,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,7.653088900027797,60,15.0,,plans/engineering/toyota-env4-d090-s109.json.gz
+toyota-env4-d090-s109,toyota-env4,90,89.92248062015504,89.52380952380953,65,12,109,phans,,timeout,15.0,,15.0,planning time limit reached,
+toyota-env4-d095-s109,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,109,engineering,c9cbcecd34c73a22bdd01b9ea765ab2c7cdc40a55908cc57ea7c3507c323459e,solved,1.6492191000143066,85,15.0,,plans/engineering/toyota-env4-d095-s109.json.gz
+toyota-env4-d095-s109,toyota-env4,95,95.03875968992249,94.01360544217687,32,12,109,phans,,solved,11.141505600011442,85,15.0,,plans/phans/toyota-env4-d095-s109.json.gz
